@@ -19,4 +19,4 @@ or, with pipsi:
 
     pipsi install /home/infothrill/src/git/cli-tools/
 
-    pipsi install git+https://github.com/infothrill/cli-tools.git#egg=clitools
+    pipsi install git+https://github.com/infothrill/python-clitools.git#egg=clitools
