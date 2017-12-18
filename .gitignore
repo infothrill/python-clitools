@@ -1,0 +1,9 @@
+.project
+dist
+build
+*.egg-info
+.tox
+*.egg
+.cache
+.eggs
+.direnv
