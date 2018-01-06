@@ -17,10 +17,10 @@ setup(
     license='MIT',
     install_requires=[
         'click >= 6.7',
-        'chardet >= 2.1', # detectencoding
-        'IPy >= 0.83', # onlinepingheck
+        'chardet >= 2.1',  # detectencoding
+        'IPy >= 0.83',  # onlinepingheck
         'unidecode >= 0.04',  # transliterate
-        'mutagen >= 1.39', # mp3 tags
+        'mutagen >= 1.39',  # mp3 tags
         'six',
         ],
     setup_requires=['pytest-runner'],

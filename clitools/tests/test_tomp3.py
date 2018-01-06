@@ -18,5 +18,5 @@ class CliTestCase(unittest.TestCase):
         """Test empty cli run."""
         runner = CliRunner()
         result = runner.invoke(main)
-        assert "Nothing to do" in result.output
-        assert result.exit_code == 0
+        self.assertTrue("Nothing to do" in result.output)
+        self.assertEqual(0, result.exit_code)
