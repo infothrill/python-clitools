@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Test internet connectivity."""
@@ -7,6 +6,8 @@
 # starting with python3.4 no additional dependencies
 
 from __future__ import print_function
+from __future__ import absolute_import
+
 from itertools import chain
 import platform
 from random import randint

@@ -1,8 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Simplistic rot13 bi-directional converter."""
 
+from __future__ import absolute_import
 
 import sys
 

@@ -20,3 +20,7 @@ or, with pipsi:
     pipsi install /home/infothrill/src/git/cli-tools/
 
     pipsi install git+https://github.com/infothrill/python-clitools.git#egg=clitools
+
+Requirements
+------------
+Python3.6+

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Command line script to batch convert audio files to mp3."""
@@ -6,6 +5,8 @@
 # apt-get install python-tagpy lame
 
 from __future__ import print_function
+from __future__ import absolute_import
+
 import sys
 import os
 import subprocess  # nosec

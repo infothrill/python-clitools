@@ -5,10 +5,13 @@
 
 from setuptools import setup, find_packages
 
+import sys
+if sys.version_info < (2, 7):
+    sys.exit('Sorry, Python < 2.7 is not supported')
 
 setup(
     name='clitools',
-    version='0.1.0',
+    version='0.2.0',
     url='https://github.com/infothrill/python-clitools',
     author='Paul Kremer',
     author_email='@'.join(("paul", "spurious.biz")),  # avoid spam,
@@ -37,4 +40,9 @@ setup(
         ]
     },
     data_files=[],
+    classifiers=[
+        'DO NOT UPLOAD',  # block pypi publication
+        'Topic :: Utilities',
+        'Programming Language :: Python :: 3.6',
+    ]
 )

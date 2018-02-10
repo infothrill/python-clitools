@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 u"""Rename filesystem entries to ASCII equivalent transliterations.
@@ -15,6 +14,7 @@ $ transliterate -v --dry-run .
 # This tool assumes consistent filename encoding. If you are trying to
 # fix the encoding of the filenames, try:
 # http://manpages.ubuntu.com/manpages/xenial/man1/convmv.1.html
+from __future__ import absolute_import
 
 import os
 import sys

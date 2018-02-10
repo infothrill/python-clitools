@@ -8,11 +8,12 @@ urandom to generate a password itself.
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import sys
 import os
 from os import urandom
-from itertools import islice, imap, repeat
+from itertools import islice, repeat
 import subprocess  # nosec
 
 import click
@@ -59,7 +60,19 @@ def rand_string(length=32, exclude=None):
     symbols = "!#$%&()*+,-./:;<=>?@[]_{}~^"
 
     allowed = set(lower_case + upper_case + digits + symbols).difference(exclude)
-    char_gen = (c for c in imap(urandom, repeat(1)) if c in allowed)
+
+    def urandomascii(size):
+        strval = None
+        while strval is None:
+            value = urandom(size)
+            try:
+                strval = value.decode("ascii")
+            except UnicodeDecodeError:
+                strval = None
+                continue
+        return strval
+
+    char_gen = (c for c in map(urandomascii, repeat(1)) if c in allowed)
     return ''.join(islice(char_gen, None, length))
 
 
