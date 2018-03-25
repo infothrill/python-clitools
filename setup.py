@@ -24,14 +24,16 @@ setup(
         'IPy >= 0.83',  # onlinepingheck
         'unidecode >= 0.04',  # transliterate
         'mutagen >= 1.39',  # mp3 tags
+        'class-registry >= 2.1.2',  # fs-lint
         'six',
-        ],
+    ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest>=3.0.7'],
     entry_points={
         "console_scripts": [
             "detectencoding = clitools.detectencoding:main",
             "digssh = clitools.digssh:main",
+            "fs-lint = clitools.fs_lint:main",
             "onlinepingcheck= clitools.onlinepingcheck:main",
             "rndpasswd = clitools.rndpasswd:main",
             "rot13 = clitools.rot13:main",

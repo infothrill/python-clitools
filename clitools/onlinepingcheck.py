@@ -101,7 +101,7 @@ def online_check():
         "8.8.8.8",  # google
         "8.8.4.4",  # google
         "46.228.47.115",  # yahoo
-        ]
+    ]
     last_resort_ips = [  # dns root servers
         "198.41.0.4",
         "192.228.79.201",
