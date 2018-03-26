@@ -8,6 +8,7 @@ from __future__ import print_function
 import os
 import sys
 import stat
+import re
 from pathlib import Path
 
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
@@ -157,6 +158,45 @@ class TestOrphanExecutable(TestBase):
             self.add_failed(path)
         elif bool(st.st_mode & stat.S_IXOTH) and not bool(st.st_mode & stat.S_IROTH):
             self.add_failed(path)
+
+
+@linterdex.register
+class TestTempfile(TestBase):
+    """Test if file seems to be a temporary file."""
+
+    name = "tempfile"
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        self._regex = re.compile("^(core|.*~|dead.letter|,.*|.*\.v|.*\.emacs_[0-9]*|.*\.[Bb][Aa][Kk]|.*\.swp)$")
+
+    def test(self, path, st):  # noqa: D102
+        if not stat.S_ISDIR(st.st_mode):
+            if self._regex.match(path.name):
+                self.add_failed(path)
+
+
+@linterdex.register
+class TestProblematicFilenames(TestBase):
+    """Test if file seems to have a weird name."""
+
+    name = "problematicname"
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        expressions = [
+            ".*\s+",  # spaces at end
+            "\s+.*",  # spaces at start
+            ".*\s\s+.*",  # 2 or more adjacent spaces
+            "-.*",  # - at start of name
+            ".*\s-.*",  # - after space in name
+        ]
+        self._regex = re.compile("^(%s)$" % "|".join(expressions))
+
+    def test(self, path, st):  # noqa: D102
+        if self._regex.match(path.name):
+            self.add_failed(path)
+
 
 # TODO: check suid bit
 
