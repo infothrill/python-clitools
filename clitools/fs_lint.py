@@ -49,7 +49,7 @@ class TestWorldWritable(TestBase):
 class TestWorldReadable(TestBase):
     """Test for world readable files."""
 
-    name = "worldreadable"
+    name = 'worldreadable'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -62,7 +62,7 @@ class TestWorldReadable(TestBase):
 class TestWorldReadableDirs(TestBase):
     """Test for world readable dirs."""
 
-    name = "worldreadabledirs"
+    name = 'worldreadabledirs'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -74,7 +74,7 @@ class TestWorldReadableDirs(TestBase):
 class TestOwner(TestBase):
     """Test for file ownership."""
 
-    name = "owner"
+    name = 'owner'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -90,7 +90,7 @@ class TestOwner(TestBase):
 class TestGroup(TestBase):
     """Test for group ownership."""
 
-    name = "group"
+    name = 'group'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -106,17 +106,17 @@ class TestGroup(TestBase):
 class TestWronglyExecutable(TestBase):
     """Test for executable bit on known file types."""
 
-    name = "wronglyexecutable"
+    name = 'wronglyexecutable'
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        self._extensions = set([".jpg", ".jpeg", ".doc", ".xml", ".js", ".css",
-                                ".png", ".gif", ".ppt", ".vsd", ".xls", ".json",
-                                ".html", ".tiff", ".ini", ".java", ".graffle",
-                                ".sql", ".jar", ".mov", ".pdf", ".properties", ".psd",
-                                ".rtf", ".dvi", ".log", ".wmf", ".txt", ".bmp",
-                                ".tif", ".cdr", ".eps", ".zip", ".avi", ".mp4",
-                                ".odt", ".csv", ".ttf", ".xhtml"])
+        self._extensions = {'.jpg', '.jpeg', '.doc', '.xml', '.js', '.css',
+                            '.png', '.gif', '.ppt', '.vsd', '.xls', '.json',
+                            '.html', '.tiff', '.ini', '.java', '.graffle',
+                            '.sql', '.jar', '.mov', '.pdf', '.properties', '.psd',
+                            '.rtf', '.dvi', '.log', '.wmf', '.txt', '.bmp',
+                            '.tif', '.cdr', '.eps', '.zip', '.avi', '.mp4',
+                            '.odt', '.csv', '.ttf', '.xhtml'}
         self.suffixes = {}  # keep an index count of all non-matched, executable extensions
         # useful for optimizing / debugging
 
@@ -138,11 +138,11 @@ class TestWronglyExecutable(TestBase):
 class TestUpperCaseExtension(TestBase):
     """Test for filenames with upper case extensions."""
 
-    name = "uppercaseextension"
+    name = 'uppercaseextension'
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        self._ok_extensions = set([".PL", ".C"])
+        self._ok_extensions = {'.PL', '.C'}
         # TODO:
         # self._parts_exceptions = ( ("CVS", "Entries.Log"), )
 
@@ -161,7 +161,7 @@ class TestOrphanExecutable(TestBase):
     read bit set.
     """
 
-    name = "orphanexecutablebit"
+    name = 'orphanexecutablebit'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -177,11 +177,11 @@ class TestOrphanExecutable(TestBase):
 class TestTempfile(TestBase):
     """Test if file seems to be a temporary file."""
 
-    name = "tempfile"
+    name = 'tempfile'
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        self._regex = re.compile(r"^(core|.*~|dead.letter|,.*|.*\.v|.*\.emacs_[0-9]*|.*\.[Bb][Aa][Kk]|.*\.swp)$")
+        self._regex = re.compile(r'^(core|.*~|dead.letter|,.*|.*\.v|.*\.emacs_[0-9]*|.*\.[Bb][Aa][Kk]|.*\.swp)$')
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -194,18 +194,18 @@ class TestTempfile(TestBase):
 class TestProblematicFilenames(TestBase):
     """Test if file seems to have a weird name."""
 
-    name = "problematicname"
+    name = 'problematicname'
 
     def __init__(self):  # noqa: D107
         super().__init__()
         expressions = [
-            r".*\s+",  # spaces at end
-            r"\s+.*",  # spaces at start
-            r".*\s\s+.*",  # 2 or more adjacent spaces
-            r"-.*",  # - at start of name
-            r".*\s-.*",  # - after space in name
+            r'.*\s+',  # spaces at end
+            r'\s+.*',  # spaces at start
+            r'.*\s\s+.*',  # 2 or more adjacent spaces
+            r'-.*',  # - at start of name
+            r'.*\s-.*',  # - after space in name
         ]
-        self._regex = re.compile("^(%s)$" % "|".join(expressions))
+        self._regex = re.compile(r'^(%s)$' % '|'.join(expressions))
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -254,7 +254,7 @@ def main(paths, skip_test, list_tests, exclude, verbose):
     linter = FSLinter()
     if list_tests:
         for available_test in sorted(linterdex.keys()):
-            click.secho("%s: " % available_test, nl=False, bold=True)
+            click.secho('%s: ' % available_test, nl=False, bold=True)
             click.echo(filetests[available_test].__doc__)
         return 0
     if exclude:
@@ -272,21 +272,21 @@ def main(paths, skip_test, list_tests, exclude, verbose):
         elif os.path.isfile(start_path):
             linter(Path(start_path))
         else:
-            raise ValueError("Invalid argument %r" % start_path)
+            raise ValueError('Invalid argument %r' % start_path)
 
     for test in linter.tests:
         if test.count_failed() > 0:
-            click.secho("%s: " % test.name, nl=False, bold=True)
-            click.secho("%i" % test.count_failed(), fg="red", bold=True)
+            click.secho('%s: ' % test.name, nl=False, bold=True)
+            click.secho('%i' % test.count_failed(), fg='red', bold=True)
             if verbose:
                 for p in test.failed:
                     click.echo(p)
         else:
-            click.secho("%s: " % test.name, nl=False, bold=True)
-            click.secho("%i" % test.count_failed(), fg="green", bold=True)
+            click.secho('%s: ' % test.name, nl=False, bold=True)
+            click.secho('%i' % test.count_failed(), fg='green', bold=True)
 
 #     import operator
-#     sorted_x = sorted(filetests["wronglyexecutable"].suffixes.items(), key=operator.itemgetter(1))
+#     sorted_x = sorted(filetests['wronglyexecutable'].suffixes.items(), key=operator.itemgetter(1))
 #     print(sorted_x)
 
 

@@ -50,7 +50,7 @@ def transrename(path, verbose=False, dry_run=False):
         newbasename = newbasename.replace('/', '_')  # unicode forward slash allowed, but not ascii!
         newabspath = os.path.join(dirname, newbasename)
         if verbose:
-            click.echo("%s -> %s" % (path, newbasename))
+            click.echo('%s -> %s' % (path, newbasename))
         if not dry_run:
             os.rename(path, newabspath)
 
@@ -75,7 +75,7 @@ def main(paths, verbose, dry_run):
         elif os.path.isfile(start_path):
             transrename(start_path, verbose, dry_run)
         else:
-            raise ValueError("Invalid argument %r" % start_path)
+            raise ValueError('Invalid argument %r' % start_path)
 
 
 if __name__ == '__main__':

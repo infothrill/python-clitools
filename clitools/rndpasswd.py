@@ -34,7 +34,7 @@ def which(program):
         if is_exe(program):
             return program
     else:
-        for path in os.environ["PATH"].split(os.pathsep):
+        for path in os.environ['PATH'].split(os.pathsep):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
@@ -54,10 +54,10 @@ def rand_string(length=32, exclude=None):
     else:
         exclude = set(exclude)
     # remove lowercase L and uppercase o to avoid confusion with DIGITS
-    lower_case = "abcdefghijkmnopqrstuvwxyz"
-    upper_case = "ABCDEFGHIJKLMNPQRSTUVWXYZ"
-    digits = "0123456789"
-    symbols = "!#$%&()*+,-./:;<=>?@[]_{}~^"
+    lower_case = 'abcdefghijkmnopqrstuvwxyz'
+    upper_case = 'ABCDEFGHIJKLMNPQRSTUVWXYZ'
+    digits = '0123456789'
+    symbols = '!#$%&()*+,-./:;<=>?@[]_}{~^'
 
     allowed = set(lower_case + upper_case + digits + symbols).difference(exclude)
 
@@ -66,7 +66,7 @@ def rand_string(length=32, exclude=None):
         while strval is None:
             value = urandom(size)
             try:
-                strval = value.decode("ascii")
+                strval = value.decode('ascii')
             except UnicodeDecodeError:
                 strval = None
                 continue
@@ -88,26 +88,26 @@ def pwgen(length=32, exclude=None):
         exclude = r"\`'\""
     else:
         exclude = r"\`'\"" + exclude
-    cmd = ["pwgen", "-sBy", "-r", exclude, "%s" % length, "1"]
+    cmd = ['pwgen', '-sBy', '-r', exclude, '%s' % length, '1']
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
-        raise Exception("pwgen: %s %s" % (stdout, stderr))
+        raise Exception('pwgen: %s %s' % (stdout, stderr))
     return stdout.strip()
 
 
 @click.command()
 @click.argument('length', type=click.INT, default=32)
-@click.option('-r', '--remove-chars', type=click.STRING, default="")
+@click.option('-r', '--remove-chars', type=click.STRING, default='')
 def main(length, remove_chars):
     """Generate a secure password."""
     if which('pwgen'):
-        print(pwgen(length, remove_chars))
+        print(pwgen(length, remove_chars))  # noqa: T001
     else:
-        print(rand_string(length, remove_chars))
+        print(rand_string(length, remove_chars))  # noqa: T001
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # pylint: disable=no-value-for-parameter
     sys.exit(main())

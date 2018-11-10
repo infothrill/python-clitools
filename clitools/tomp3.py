@@ -56,16 +56,16 @@ def convert_wave_to_mp3(path, dest):
 
     :param path: path
     """
-    if not dest.endswith(".mp3"):
-        raise ValueError("Dest %s must end in .mp3" % dest)
+    if not dest.endswith('.mp3'):
+        raise ValueError('Dest %s must end in .mp3' % dest)
     if os.path.exists(dest):
-        click.secho("WARN: \"%s\" already exists, skipping" % dest, fg='yellow')
+        click.secho('WARN: "%s" already exists, skipping' % dest, fg='yellow')
         return None
-    cmd = ["lame", "-S", "--silent", "-b", "320", path, dest]
+    cmd = ['lame', '-S', '--silent', '-b', '320', path, dest]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
-        click.secho("Error: non-zero exit code: %i" % proc.returncode, fg="red")
+        click.secho('Error: non-zero exit code: %i' % proc.returncode, fg='red')
         if stdout:
             click.echo(stdout)
         if stderr:
@@ -85,12 +85,12 @@ def convert_flac_to_mp3(path, dest):
     information that is pretty much unsupported elsewhere. Since this process is
     non-destructive, we add the data anyway.
     """
-    if not path.endswith(".flac"):
-        raise ValueError("Source path %s must end in .flac" % path)
-    if not dest.endswith(".mp3"):
-        raise ValueError("Destination path %s must end in .mp3" % dest)
+    if not path.endswith('.flac'):
+        raise ValueError('Source path %s must end in .flac' % path)
+    if not dest.endswith('.mp3'):
+        raise ValueError('Destination path %s must end in .mp3' % dest)
     if os.path.exists(dest):
-        click.secho("WARN: \"%s\" already exists, skipping" % dest, fg='yellow')
+        click.secho('WARN: "%s" already exists, skipping' % dest, fg='yellow')
         return
     tags = get_flac_tags_mutagen(path)
     # print tags
@@ -107,10 +107,10 @@ def convert_flac_to_mp3(path, dest):
     lametagopts = []
     for lametag in lametags:
         if lametag in tags:
-            lametagopts.append("--%s" % lametags[lametag])
+            lametagopts.append('--%s' % lametags[lametag])
             lametagopts.append(tags[lametag][-1])
     lamecmd.extend(lametagopts)
-    lamecmd.append("-")  # stdin
+    lamecmd.append('-')  # stdin
     lamecmd.append(dest)
     flaccmd = ['flac', '--stdout', '--silent', '--decode', path]
     # print(" ".join(flaccmd) + " | " +" ".join(lamecmd))
@@ -119,10 +119,10 @@ def convert_flac_to_mp3(path, dest):
     flac = subprocess.Popen(flaccmd, stdout=lame.stdin)   # nosec
     out, err = lame.communicate()
     if flac.wait() != 0:
-        click.secho("ERROR in flac process", fg="red")
+        click.secho('ERROR in flac process', fg='red')
         # print out, err
     if lame.returncode != 0:
-        click.secho("Error in lame process: %r" % out+err, fg="red")
+        click.secho('Error in lame process: %r' % out + err, fg='red')
 
 
 def rreplace(s, old, new, occurrence):
@@ -137,29 +137,29 @@ def rreplace(s, old, new, occurrence):
     return new.join(s.rsplit(old, occurrence))
 
 
-def resample_mp3(inpath, outpath, bitrate="128"):
+def resample_mp3(inpath, outpath, bitrate='128'):
     """
     Resample input file with given bitrate to target basedir.
 
     lame --mp3input -b 128 input.mp3 output.mp3
     """
-    if not outpath.endswith(".mp3"):
-        raise ValueError("Dest %s must end in .mp3" % outpath)
+    if not outpath.endswith('.mp3'):
+        raise ValueError('Dest %s must end in .mp3' % outpath)
     if os.path.exists(outpath):
-        click.secho("WARN: %s already exists, skipping" % outpath, fg='yellow')
+        click.secho('WARN: %s already exists, skipping' % outpath, fg='yellow')
         return None
     # cmd = ["ffmpeg", "-i", inpath, "-ab",  "%sk" % bitrate, outpath]
     # lame is slower !? (90sec ffmpeg, 100sec lame)
     # lame preserves tags!
-    cmd = ["lame", "--mp3input", "-b", bitrate, inpath, outpath]
+    cmd = ['lame', '--mp3input', '-b', bitrate, inpath, outpath]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
-        click.secho("Error: non-zero exit code: %i" % proc.returncode, fg="red")
+        click.secho('Error: non-zero exit code: %i' % proc.returncode, fg='red')
         if stdout:
-            click.secho(stdout, fg="red")
+            click.secho(stdout, fg='red')
         if stderr:
-            click.secho(stderr, fg="red")
+            click.secho(stderr, fg='red')
     return proc.returncode
 
 
@@ -173,10 +173,10 @@ def convert(path, destdir, verbose=False, dry_run=False):
     :param dry_run:
     """
     strategies = {
-        ".wav": convert_wave_to_mp3,
-        ".aiff": convert_wave_to_mp3,
-        ".flac": convert_flac_to_mp3,
-        ".mp3": resample_mp3
+        '.wav': convert_wave_to_mp3,
+        '.aiff': convert_wave_to_mp3,
+        '.flac': convert_flac_to_mp3,
+        '.mp3': resample_mp3
     }
     ext = None
     for ext_ in strategies:
@@ -186,12 +186,12 @@ def convert(path, destdir, verbose=False, dry_run=False):
 
     if ext is None:
         if verbose:
-            click.secho("Skipping \"%s\"" % path, fg='blue')
+            click.secho('Skipping "%s"' % path, fg='blue')
     else:
         src_fname = os.path.basename(path)
-        dst_fname = rreplace(src_fname, ext, ".mp3", 1)
+        dst_fname = rreplace(src_fname, ext, '.mp3', 1)
         dst_path = os.path.join(destdir, dst_fname)
-        click.secho("Converting \"%s\"" % path)
+        click.secho('Converting "%s"' % path)
         if not dry_run:
             if not os.path.exists(destdir):
                 os.makedirs(destdir, 0o755)
@@ -227,7 +227,7 @@ def filenames(path):
     elif os.path.isfile(path):
         yield path
     else:
-        raise ValueError("Invalid argument %r" % path)
+        raise ValueError('Invalid argument %r' % path)
 
 
 @click.command()
@@ -247,11 +247,11 @@ def main(paths, target, verbose, dry_run):
     if target is not None:
         target = os.path.expanduser(target)
     if not paths:
-        print("Nothing to do, no paths specified.")
+        click.echo('Nothing to do, no paths specified.')
         return 0
     for start_path in (os.path.expanduser(p) for p in paths):
         if verbose:
-            click.secho("Traversing \"%s\":" % start_path, fg="blue")
+            click.secho('Traversing "%s":' % start_path, fg='blue')
         for path in filenames(start_path):
             destdir = newdir(start_path, target, path)
             convert(path, destdir, verbose, dry_run)

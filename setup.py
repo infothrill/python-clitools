@@ -11,12 +11,15 @@ if sys.version_info < (2, 7):
 
 setup(
     name='clitools',
-    version='0.2.0',
+    version='0.2.1',
     url='https://github.com/infothrill/python-clitools',
     author='Paul Kremer',
-    author_email='@'.join(("paul", "spurious.biz")),  # avoid spam,
+    author_email='@'.join(('paul', 'spurious.biz')),  # avoid spam,
     description='Collection of CLI tools written in Python',
     packages=find_packages(),
+    # https://packaging.python.org/tutorials/distributing-packages/#python-requires
+    python_requires='>=3.5',
+    setup_requires=['pytest-runner', 'setuptools>=12'],
     license='MIT',
     install_requires=[
         'click >= 6.7',
@@ -27,18 +30,17 @@ setup(
         'class-registry >= 2.1.2',  # fs-lint
         'six',
     ],
-    setup_requires=['pytest-runner'],
     tests_require=['pytest>=3.0.7'],
     entry_points={
-        "console_scripts": [
-            "detectencoding = clitools.detectencoding:main",
-            "digssh = clitools.digssh:main",
-            "fs-lint = clitools.fs_lint:main",
-            "onlinepingcheck= clitools.onlinepingcheck:main",
-            "rndpasswd = clitools.rndpasswd:main",
-            "rot13 = clitools.rot13:main",
-            "transliterate = clitools.transliterate:main",
-            "tomp3 = clitools.tomp3:main",
+        'console_scripts': [
+            'detectencoding = clitools.detectencoding:main',
+            'digssh = clitools.digssh:main',
+            'fs-lint = clitools.fs_lint:main',
+            'onlinepingcheck= clitools.onlinepingcheck:main',
+            'rndpasswd = clitools.rndpasswd:main',
+            'rot13 = clitools.rot13:main',
+            'transliterate = clitools.transliterate:main',
+            'tomp3 = clitools.tomp3:main',
         ]
     },
     data_files=[],

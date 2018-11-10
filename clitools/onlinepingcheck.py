@@ -40,7 +40,7 @@ else:
 
 def random_ip():
     """Make a random IP string and return it."""
-    return new_ip("%i.%i.%i.%i" % (randint(1, 254),  # nosec
+    return new_ip('%i.%i.%i.%i' % (randint(1, 254),  # nosec
                                    randint(1, 254),  # nosec
                                    randint(1, 254),  # nosec
                                    randint(1, 254)))  # nosec
@@ -74,10 +74,10 @@ def can_ping_host(host, num_tries=1):
     :param host: the host to ping
     :param num_tries: number of retries
     """
-    if platform.system() == "Darwin":
-        args = ['ping', '-n', '-c', '1', '-t', '1', "%s" % host]
+    if platform.system() == 'Darwin':
+        args = ['ping', '-n', '-c', '1', '-t', '1', '%s' % host]
     else:
-        args = ['ping', '-n', '-c', '1', '-W', '1', "%s" % host]
+        args = ['ping', '-n', '-c', '1', '-W', '1', '%s' % host]
     can_ping = False
     for _ in range(0, num_tries):
         # print(" ".join(args))
@@ -97,25 +97,25 @@ def online_check():
     generated IPs and ends with DNS root servers.
     """
     try_first_ips = [
-        "216.58.213.238",  # google
-        "8.8.8.8",  # google
-        "8.8.4.4",  # google
-        "46.228.47.115",  # yahoo
+        '216.58.213.238',  # google
+        '8.8.8.8',  # google
+        '8.8.4.4',  # google
+        '46.228.47.115',  # yahoo
     ]
     last_resort_ips = [  # dns root servers
-        "198.41.0.4",
-        "192.228.79.201",
-        "192.33.4.12",
-        "128.8.10.90",
-        "192.203.230.10",
-        "192.5.5.241",
-        "192.112.36.4",
-        "128.63.2.53",
-        "192.36.148.17",
-        "192.58.128.30",
-        "193.0.14.129",
-        "198.32.64.12",
-        "202.12.27.33"
+        '198.41.0.4',
+        '192.228.79.201',
+        '192.33.4.12',
+        '128.8.10.90',
+        '192.203.230.10',
+        '192.5.5.241',
+        '192.112.36.4',
+        '128.63.2.53',
+        '192.36.148.17',
+        '192.58.128.30',
+        '193.0.14.129',
+        '198.32.64.12',
+        '202.12.27.33'
     ]
 
     iplists = []
@@ -129,9 +129,9 @@ def online_check():
 def main():
     """Run main program."""
     if online_check():
-        print("online")
+        print('online')  # noqa: T001
         return 0
-    print("offline")
+    print('offline')  # noqa: T001
     return 1
 
 

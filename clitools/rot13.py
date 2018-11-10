@@ -19,5 +19,5 @@ def main():
         sys.stdout.write(chr(byte))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
