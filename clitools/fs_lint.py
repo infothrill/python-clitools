@@ -59,6 +59,30 @@ class TestWorldReadable(TestBase):
 
 
 @linterdex.register
+class TestSuid(TestBase):
+    """Test for files with SUID bit."""
+
+    name = 'suid'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if bool(pathstat.st_mode & stat.S_ISUID):
+            self.add_failed(path)
+
+
+@linterdex.register
+class TestSgid(TestBase):
+    """Test for files with SGID bit."""
+
+    name = 'sgid'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if bool(pathstat.st_mode & stat.S_ISGID):
+            self.add_failed(path)
+
+
+@linterdex.register
 class TestWorldReadableDirs(TestBase):
     """Test for world readable dirs."""
 
@@ -213,9 +237,6 @@ class TestProblematicFilenames(TestBase):
             self.add_failed(path)
 
 
-# TODO: check suid bit
-
-
 class FSLinter():
     """The main linter class."""
 
@@ -246,10 +267,15 @@ class FSLinter():
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
 @click.option('-s', '--skip-test', multiple=True)
 @click.option('-l', '--list-tests', is_flag=True, default=False)
-@click.option('-x', '--exclude', multiple=True)
+@click.option(
+    '-i', '--ignore', 'ignore',
+    metavar='PATTERN',
+    multiple=True,
+    help='Ignore files/directories matching PATTERN'
+)
 @click.option('-v', '--verbose', is_flag=True, default=False)
-def main(paths, skip_test, list_tests, exclude, verbose):
-    """Find files that fail certain tests."""
+def main(paths, skip_test, list_tests, ignore, verbose):
+    """Find paths that fail certain tests."""
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
     if list_tests:
@@ -257,8 +283,8 @@ def main(paths, skip_test, list_tests, exclude, verbose):
             click.secho('%s: ' % available_test, nl=False, bold=True)
             click.echo(filetests[available_test].__doc__)
         return 0
-    if exclude:
-        linter.ignore(exclude)
+    if ignore:
+        linter.ignore(ignore)
     for available_test in linterdex.keys():
         if available_test not in skip_test:
             linter.register(filetests[available_test])

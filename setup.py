@@ -28,6 +28,7 @@ setup(
         'unidecode >= 0.04',  # transliterate
         'mutagen >= 1.39',  # mp3 tags
         'class-registry >= 2.1.2',  # fs-lint
+        'pathspec>=0.5.9',  # fs-lint
         'six',
     ],
     tests_require=['pytest>=3.0.7'],
