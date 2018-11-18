@@ -36,7 +36,7 @@ setup(
         'console_scripts': [
             'detectencoding = clitools.detectencoding:main',
             'digssh = clitools.digssh:main',
-            'fs-lint = clitools.fs_lint:main',
+            'fs-lint = clitools.fs_lint:fs_lint',
             'onlinepingcheck= clitools.onlinepingcheck:main',
             'rndpasswd = clitools.rndpasswd:main',
             'rot13 = clitools.rot13:main',

@@ -10,10 +10,18 @@ import sys
 import stat
 import re
 from pathlib import Path
+import subprocess  # noqa: S404
+import logging
 
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
 import click
 import pathspec
+
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(message)s'))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 linterdex = ClassRegistry('name')
 
@@ -23,6 +31,7 @@ class TestBase():
 
     def __init__(self):  # noqa: D107
         self.failed = []
+        self.total = 0  # count total of tests performed
 
     def add_failed(self, path):
         """Mark the given path as failed."""
@@ -31,6 +40,29 @@ class TestBase():
     def count_failed(self):
         """Return amount of failed tests."""
         return len(self.failed)
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        raise NotImplementedError('Must be implemented in subclass.')
+
+    def __call__(self, path, pathstat):
+        """Run all test on the specified path and stat object."""
+        self.total += 1
+        return self.test(path, pathstat)
+
+
+@linterdex.register
+class TestNonRegularFiles(TestBase):
+    """Test if path is one of file, directory, symbolic link."""
+
+    name = 'nonregular'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if not stat.S_ISDIR(pathstat.st_mode) \
+            and not stat.S_ISREG(pathstat.st_mode) \
+                and not stat.S_ISLNK(pathstat.st_mode):
+            self.add_failed(path)
 
 
 @linterdex.register
@@ -47,7 +79,7 @@ class TestWorldWritable(TestBase):
 
 @linterdex.register
 class TestWorldReadable(TestBase):
-    """Test for world readable files."""
+    """Test for world readable/executable paths."""
 
     name = 'worldreadable'
 
@@ -60,7 +92,7 @@ class TestWorldReadable(TestBase):
 
 @linterdex.register
 class TestSuid(TestBase):
-    """Test for files with SUID bit."""
+    """Test for paths with SUID bit."""
 
     name = 'suid'
 
@@ -71,8 +103,20 @@ class TestSuid(TestBase):
 
 
 @linterdex.register
+class TestBrokenSymlink(TestBase):
+    """Test for broken symlinks."""
+
+    name = 'brokensymlink'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if stat.S_ISLNK(pathstat.st_mode) and not os.path.exists(path):
+            self.add_failed(path)
+
+
+@linterdex.register
 class TestSgid(TestBase):
-    """Test for files with SGID bit."""
+    """Test for paths with SGID bit."""
 
     name = 'sgid'
 
@@ -86,7 +130,7 @@ class TestSgid(TestBase):
 class TestWorldReadableDirs(TestBase):
     """Test for world readable dirs."""
 
-    name = 'worldreadabledirs'
+    name = 'worldreadabledir'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -140,13 +184,17 @@ class TestWronglyExecutable(TestBase):
                             '.sql', '.jar', '.mov', '.pdf', '.properties', '.psd',
                             '.rtf', '.dvi', '.log', '.wmf', '.txt', '.bmp',
                             '.tif', '.cdr', '.eps', '.zip', '.avi', '.mp4',
-                            '.odt', '.csv', '.ttf', '.xhtml'}
+                            '.odt', '.csv', '.ttf', '.xhtml', '.tbz', '.mid',
+                            '.ps', '.swf', '.tex', '.vor', '.dot', '.htm', '.wav',
+                            '.mp3', '.aif', '.pkg', '.idx', '.dtd', '.psp', '.svg',
+                            '.woff'}
         self.suffixes = {}  # keep an index count of all non-matched, executable extensions
         # useful for optimizing / debugging
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if not stat.S_ISDIR(pathstat.st_mode):
+        # exclude directories and symbolic links from this test
+        if not stat.S_ISDIR(pathstat.st_mode) and not stat.S_ISLNK(pathstat.st_mode):
             if bool(pathstat.st_mode & stat.S_IXUSR) or \
                 bool(pathstat.st_mode & stat.S_IXGRP) or \
                     bool(pathstat.st_mode & stat.S_IXOTH):
@@ -242,12 +290,6 @@ class FSLinter():
 
     def __init__(self):  # noqa: D107
         self.tests = []
-        self._ignore_spec = None
-
-    def ignore(self, ignore_patterns):
-        """Register gitignore style patterns for paths to be ignored."""
-        patterns = map(pathspec.patterns.GitWildMatchPattern, ignore_patterns)
-        self._ignore_spec = pathspec.PathSpec(patterns)
 
     def register(self, test):
         """Register an initialized test based on TestBase."""
@@ -255,27 +297,54 @@ class FSLinter():
 
     def __call__(self, path):
         """Run all registered tests on the specified path."""
-        if self._ignore_spec and self._ignore_spec.match_file(path.as_posix()):
-            # print("Ignored: %s" % path)
-            return
+        logger.debug('testing: %s' % path)
         st = path.lstat()
         for test in self.tests:
-            test.test(path, st)
+            test(path, st)
+
+
+def readlines(fname):
+    """
+    Return tuple with lines from the given file.
+
+    Ignores problems reading the file and returns an empty tuple.
+
+    :param fname: filename
+    """
+    try:
+        with open(fname, 'r') as fh:
+            return tuple(fh.read().splitlines())
+    except OSError:
+        return ()
 
 
 @click.command()
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
-@click.option('-s', '--skip-test', multiple=True)
+@click.option('-D', '--debug', is_flag=True, default=False)
+@click.option('--hidden', is_flag=True, default=False, help='Search hidden files')
 @click.option('-l', '--list-tests', is_flag=True, default=False)
+@click.option('-s', '--skip-test', multiple=True)
 @click.option(
-    '-i', '--ignore', 'ignore',
+    '--ignore', 'ignore',
     metavar='PATTERN',
     multiple=True,
     help='Ignore files/directories matching PATTERN'
 )
+@click.option(
+    '-U', '--skip-vcs-ignores', 'skip_vcs_ignore',
+    is_flag=True,
+    default=False,
+    help='Ignore VCS ignore files'
+)
 @click.option('-v', '--verbose', is_flag=True, default=False)
-def main(paths, skip_test, list_tests, ignore, verbose):
-    """Find paths that fail certain tests."""
+def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_vcs_ignore):
+    """Find paths that fail tests."""
+    if not paths:
+        with click.Context(fs_lint, info_name='fs-lint') as ctx:
+            click.echo(fs_lint.get_help(ctx))
+            sys.exit(1)
+    if debug:
+        logger.setLevel(logging.DEBUG)
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
     if list_tests:
@@ -283,17 +352,39 @@ def main(paths, skip_test, list_tests, ignore, verbose):
             click.secho('%s: ' % available_test, nl=False, bold=True)
             click.echo(filetests[available_test].__doc__)
         return 0
-    if ignore:
-        linter.ignore(ignore)
+
+    if not ignore:
+        ignore = {}
+    if not skip_vcs_ignore:
+        # get global gitignore patterns
+        gitexcludes = subprocess.check_output(  # noqa: S607
+            'git config --path --get core.excludesfile 2>/dev/null',
+            encoding='UTF-8',
+            shell=True).strip()  # noqa: S602
+        ignore += readlines(gitexcludes)
+    if not hidden:
+        ignore = ('.*',) + ignore  # assume .* matches most often and takes precedence
+    ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, ignore))
+
     for available_test in linterdex.keys():
         if available_test not in skip_test:
             linter.register(filetests[available_test])
+
     for start_path in (os.path.expanduser(p) for p in paths):
         if os.path.isdir(start_path):
             for root, dirs, files in os.walk(start_path):
-                for relpath in sorted(dirs):
+                if not skip_vcs_ignore and '.gitignore' in files:
+                    logger.debug('.gitignore found')
+                    local_ignore_spec = pathspec.PathSpec(
+                        map(pathspec.patterns.GitWildMatchPattern, ignore + readlines(os.path.join(root, '.gitignore')))
+                    )
+                else:
+                    local_ignore_spec = ignore_spec
+                dirs[:] = [d for d in dirs if not local_ignore_spec.match_file(d)]
+                for relpath in dirs:
                     linter(Path(os.path.join(root, relpath)))
-                for relpath in sorted(files):
+                files[:] = [f for f in files if not local_ignore_spec.match_file(f)]
+                for relpath in files:
                     linter(Path(os.path.join(root, relpath)))
         elif os.path.isfile(start_path):
             linter(Path(start_path))
@@ -303,19 +394,15 @@ def main(paths, skip_test, list_tests, ignore, verbose):
     for test in linter.tests:
         if test.count_failed() > 0:
             click.secho('%s: ' % test.name, nl=False, bold=True)
-            click.secho('%i' % test.count_failed(), fg='red', bold=True)
+            click.secho('%i' % test.count_failed(), fg='red', nl=False, bold=True)
+            click.secho('/%i' % (test.total - test.count_failed()), fg='green', bold=True)
             if verbose:
                 for p in test.failed:
                     click.echo(p)
         else:
             click.secho('%s: ' % test.name, nl=False, bold=True)
-            click.secho('%i' % test.count_failed(), fg='green', bold=True)
+            click.secho('%i' % test.total, fg='green', bold=True)
 
 #     import operator
 #     sorted_x = sorted(filetests['wronglyexecutable'].suffixes.items(), key=operator.itemgetter(1))
 #     print(sorted_x)
-
-
-if __name__ == '__main__':
-    # pylint: disable=no-value-for-parameter
-    sys.exit(main())
