@@ -354,7 +354,7 @@ def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_v
         return 0
 
     if not ignore:
-        ignore = {}
+        ignore = ()
     if not skip_vcs_ignore:
         # get global gitignore patterns
         gitexcludes = subprocess.check_output(  # noqa: S607
