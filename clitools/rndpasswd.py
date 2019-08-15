@@ -14,7 +14,7 @@ import sys
 import os
 from os import urandom
 from itertools import islice, repeat
-import subprocess  # nosec
+import subprocess  # noqa: S404
 
 import click
 
@@ -89,7 +89,7 @@ def pwgen(length=32, exclude=None):
     else:
         exclude = r"\`'\"" + exclude
     cmd = ['pwgen', '-sBy', '-r', exclude, '%s' % length, '1']
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         raise Exception('pwgen: %s %s' % (stdout, stderr))

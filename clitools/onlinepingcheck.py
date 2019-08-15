@@ -12,7 +12,7 @@ from itertools import chain
 import platform
 from random import randint
 import sys
-import subprocess  # nosec
+import subprocess  # noqa: S404
 
 if sys.version_info < (3, 4):
     import IPy
@@ -40,10 +40,10 @@ else:
 
 def random_ip():
     """Make a random IP string and return it."""
-    return new_ip('%i.%i.%i.%i' % (randint(1, 254),  # nosec
-                                   randint(1, 254),  # nosec
-                                   randint(1, 254),  # nosec
-                                   randint(1, 254)))  # nosec
+    return new_ip('%i.%i.%i.%i' % (randint(1, 254),  # noqa: S311
+                                   randint(1, 254),  # noqa: S311
+                                   randint(1, 254),  # noqa: S311
+                                   randint(1, 254)))  # noqa: S311
 
 
 def random_public_ip():
@@ -81,7 +81,7 @@ def can_ping_host(host, num_tries=1):
     can_ping = False
     for _ in range(0, num_tries):
         # print(" ".join(args))
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
         res = proc.wait()
         if res == 0:
             can_ping = True

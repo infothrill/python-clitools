@@ -3,17 +3,17 @@
 u"""Rename filesystem entries to ASCII equivalent transliterations.
 
 Example:
-
 $ ls -l
 -rw-r--r--  1 john staff    0 Dec 17 09:15 naïve
-
 $ transliterate -v --dry-run .
 ./naïve -> naive
+
 """
 
 # This tool assumes consistent filename encoding. If you are trying to
 # fix the encoding of the filenames, try:
 # http://manpages.ubuntu.com/manpages/xenial/man1/convmv.1.html
+
 from __future__ import absolute_import
 
 import os

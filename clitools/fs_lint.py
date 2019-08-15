@@ -285,6 +285,18 @@ class TestProblematicFilenames(TestBase):
             self.add_failed(path)
 
 
+@linterdex.register
+class TestLength32(TestBase):
+    """Test if filename is longer than 32 characters."""
+
+    name = 'len32'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if len(path.name) > 32:
+            self.add_failed(path)
+
+
 class FSLinter():
     """The main linter class."""
 

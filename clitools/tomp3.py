@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 import sys
 import os
-import subprocess  # nosec
+import subprocess  # noqa: S404
 import click
 
 
@@ -62,7 +62,7 @@ def convert_wave_to_mp3(path, dest):
         click.secho('WARN: "%s" already exists, skipping' % dest, fg='yellow')
         return None
     cmd = ['lame', '-S', '--silent', '-b', '320', path, dest]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         click.secho('Error: non-zero exit code: %i' % proc.returncode, fg='red')
@@ -115,8 +115,13 @@ def convert_flac_to_mp3(path, dest):
     flaccmd = ['flac', '--stdout', '--silent', '--decode', path]
     # print(" ".join(flaccmd) + " | " +" ".join(lamecmd))
     # click.echo(path) #, dest)
-    lame = subprocess.Popen(lamecmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
-    flac = subprocess.Popen(flaccmd, stdout=lame.stdin)   # nosec
+    lame = subprocess.Popen(  # noqa: S603
+        lamecmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    flac = subprocess.Popen(flaccmd, stdout=lame.stdin)   # noqa: S603
     out, err = lame.communicate()
     if flac.wait() != 0:
         click.secho('ERROR in flac process', fg='red')
@@ -152,7 +157,7 @@ def resample_mp3(inpath, outpath, bitrate='128'):
     # lame is slower !? (90sec ffmpeg, 100sec lame)
     # lame preserves tags!
     cmd = ['lame', '--mp3input', '-b', bitrate, inpath, outpath]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         click.secho('Error: non-zero exit code: %i' % proc.returncode, fg='red')
