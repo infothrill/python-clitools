@@ -37,6 +37,10 @@ class TestBase():
         """Mark the given path as failed."""
         self.failed.append(path)
 
+    def add_ok(self, path):
+        """Mark the given path as ok."""
+        pass
+
     def count_failed(self):
         """Return amount of failed tests."""
         return len(self.failed)
@@ -63,6 +67,10 @@ class TestNonRegularFiles(TestBase):
             and not stat.S_ISREG(pathstat.st_mode) \
                 and not stat.S_ISLNK(pathstat.st_mode):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -75,6 +83,10 @@ class TestWorldWritable(TestBase):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_IWOTH):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -88,6 +100,10 @@ class TestWorldReadable(TestBase):
         # we include "other executable" in this test
         if bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -100,6 +116,10 @@ class TestSuid(TestBase):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_ISUID):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -112,6 +132,10 @@ class TestBrokenSymlink(TestBase):
         """Run the test on path and stat object."""
         if stat.S_ISLNK(pathstat.st_mode) and not os.path.exists(path):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -124,6 +148,10 @@ class TestSgid(TestBase):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_ISGID):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -136,6 +164,10 @@ class TestWorldReadableDirs(TestBase):
         """Run the test on path and stat object."""
         if path.is_dir() and (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH)):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -152,6 +184,10 @@ class TestOwner(TestBase):
         """Run the test on path and stat object."""
         if pathstat.st_uid != self._uid:
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -168,6 +204,10 @@ class TestGroup(TestBase):
         """Run the test on path and stat object."""
         if pathstat.st_gid != self._gid:
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -200,10 +240,13 @@ class TestWronglyExecutable(TestBase):
                     bool(pathstat.st_mode & stat.S_IXOTH):
                 if path.suffix.lower() in self._extensions:
                     self.add_failed(path)
+                    return False
                 else:
                     if path.suffix.lower() not in self.suffixes:
                         self.suffixes[path.suffix.lower()] = 0
                     self.suffixes[path.suffix.lower()] += 1
+        self.add_ok(path)
+        return True
 
 
 @linterdex.register
@@ -220,9 +263,14 @@ class TestUpperCaseExtension(TestBase):
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if not stat.S_ISDIR(pathstat.st_mode):
-            if path.suffix not in self._ok_extensions and path.suffix.lower() != path.suffix:
-                self.add_failed(path)
+        if (not stat.S_ISDIR(pathstat.st_mode) and
+                (path.suffix not in self._ok_extensions and
+                    path.suffix.lower() != path.suffix)):
+            self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -239,10 +287,16 @@ class TestOrphanExecutable(TestBase):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_IXUSR) and not bool(pathstat.st_mode & stat.S_IRUSR):
             self.add_failed(path)
+            return False
         elif bool(pathstat.st_mode & stat.S_IXGRP) and not bool(pathstat.st_mode & stat.S_IRGRP):
             self.add_failed(path)
+            return False
         elif bool(pathstat.st_mode & stat.S_IXOTH) and not bool(pathstat.st_mode & stat.S_IROTH):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -257,9 +311,12 @@ class TestTempfile(TestBase):
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if not stat.S_ISDIR(pathstat.st_mode):
-            if self._regex.match(path.name):
-                self.add_failed(path)
+        if not stat.S_ISDIR(pathstat.st_mode) and self._regex.match(path.name):
+            self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -283,6 +340,10 @@ class TestProblematicFilenames(TestBase):
         """Run the test on path and stat object."""
         if self._regex.match(path.name):
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 @linterdex.register
@@ -295,6 +356,10 @@ class TestLength32(TestBase):
         """Run the test on path and stat object."""
         if len(path.name) > 32:
             self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
 
 
 class FSLinter():
@@ -302,6 +367,11 @@ class FSLinter():
 
     def __init__(self):  # noqa: D107
         self.tests = []
+        self._verbose = True
+
+    def set_verbose(self, verbose):
+        """Set the verbosity."""
+        self._verbose = verbose
 
     def register(self, test):
         """Register an initialized test based on TestBase."""
@@ -311,8 +381,14 @@ class FSLinter():
         """Run all registered tests on the specified path."""
         logger.debug('testing: %s' % path)
         st = path.lstat()
-        for test in self.tests:
-            test(path, st)
+        failures = [test for test in self.tests if not test(path, st)]
+        if failures:
+            click.secho('FAIL[%s]:' % ','.join(sorted(test.name for test in failures)), nl=False, fg='red', bold=False)
+            click.echo('%s' % (path))
+        else:
+            if self._verbose:
+                click.secho('OK:', nl=False, fg='green', bold=False)
+                click.echo('%s' % (path))
 
 
 def readlines(fname):
@@ -333,23 +409,24 @@ def readlines(fname):
 @click.command()
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
 @click.option('-D', '--debug', is_flag=True, default=False)
-@click.option('--hidden', is_flag=True, default=False, help='Search hidden files')
+@click.option('--hidden', is_flag=True, default=False, help='Search hidden files.')
 @click.option('-l', '--list-tests', is_flag=True, default=False)
 @click.option('-s', '--skip-test', multiple=True)
+@click.option('--statistics', is_flag=True, default=False)
 @click.option(
     '--ignore', 'ignore',
     metavar='PATTERN',
     multiple=True,
-    help='Ignore files/directories matching PATTERN'
+    help='Ignore files/directories matching PATTERN.'
 )
 @click.option(
     '-U', '--skip-vcs-ignores', 'skip_vcs_ignore',
     is_flag=True,
     default=False,
-    help='Ignore VCS ignore files'
+    help='Ignore VCS ignore files.'
 )
-@click.option('-v', '--verbose', is_flag=True, default=False)
-def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_vcs_ignore):
+@click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
+def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_vcs_ignore, statistics):
     """Find paths that fail tests."""
     if not paths:
         with click.Context(fs_lint, info_name='fs-lint') as ctx:
@@ -359,6 +436,7 @@ def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_v
         logger.setLevel(logging.DEBUG)
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
+    linter.set_verbose(verbose)
     if list_tests:
         for available_test in sorted(linterdex.keys()):
             click.secho('%s: ' % available_test, nl=False, bold=True)
@@ -403,17 +481,16 @@ def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_v
         else:
             raise ValueError('Invalid argument %r' % start_path)
 
-    for test in linter.tests:
-        if test.count_failed() > 0:
-            click.secho('%s: ' % test.name, nl=False, bold=True)
-            click.secho('%i' % test.count_failed(), fg='red', nl=False, bold=True)
-            click.secho('/%i' % (test.total - test.count_failed()), fg='green', bold=True)
-            if verbose:
-                for p in test.failed:
-                    click.echo(p)
-        else:
-            click.secho('%s: ' % test.name, nl=False, bold=True)
-            click.secho('%i' % test.total, fg='green', bold=True)
+    if statistics:
+        click.secho('Statistics', bold=True)
+        for test in linter.tests:
+            if test.count_failed() > 0:
+                click.secho('%s: ' % test.name, nl=False, bold=False)
+                click.secho('%i' % test.count_failed(), fg='red', nl=False, bold=False)
+                click.secho('/%i' % (test.total - test.count_failed()), fg='green', bold=False)
+            else:
+                click.secho('%s: ' % test.name, nl=False, bold=False)
+                click.secho('%i' % test.total, fg='green', bold=False)
 
 #     import operator
 #     sorted_x = sorted(filetests['wronglyexecutable'].suffixes.items(), key=operator.itemgetter(1))
