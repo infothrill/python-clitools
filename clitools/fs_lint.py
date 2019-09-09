@@ -12,10 +12,12 @@ import re
 from pathlib import Path
 import subprocess  # noqa: S404
 import logging
+from unidecode import unidecode
 
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
 import click
 import pathspec
+from slugify import slugify
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -98,12 +100,26 @@ class TestWorldReadable(TestBase):
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
         # we include "other executable" in this test
-        if bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH):
+        # exclude symbolic links from this test
+        if not stat.S_ISLNK(pathstat.st_mode) and (bool(pathstat.st_mode & stat.S_IROTH) or
+                                                   bool(pathstat.st_mode & stat.S_IXOTH)):
             self.add_failed(path)
             return False
         else:
             self.add_ok(path)
             return True
+
+    def fix(self, path, pathstat):
+        """Fix permissions."""
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IROTH)
+        # and once more for executable bit:
+        pathstat = os.lstat(path)
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IXOTH)
+        # & takes only those bits that both numbers have
+        # ~ inverts the bits of a number
+        # so x & ~y takes those bits that x has and that y doesn't have
 
 
 @linterdex.register
@@ -155,8 +171,8 @@ class TestSgid(TestBase):
 
 
 @linterdex.register
-class TestWorldReadableDirs(TestBase):
-    """Test for world readable dirs."""
+class TestOtherReadableDirs(TestBase):
+    """Test for 'other' readable dirs."""
 
     name = 'worldreadabledir'
 
@@ -168,6 +184,18 @@ class TestWorldReadableDirs(TestBase):
         else:
             self.add_ok(path)
             return True
+
+    def fix(self, path, pathstat):
+        """Remove 'other' readable and 'other' executable bit."""
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IROTH)
+        # and once more for executable bit:
+        pathstat = os.lstat(path)
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IXOTH)
+        # & takes only those bits that both numbers have
+        # ~ inverts the bits of a number
+        # so x & ~y takes those bits that x has and that y doesn't have
 
 
 @linterdex.register
@@ -321,7 +349,7 @@ class TestTempfile(TestBase):
 
 @linterdex.register
 class TestProblematicFilenames(TestBase):
-    """Test if file seems to have a weird name."""
+    """Test if file has a problematic name, in particular with regards to commands."""
 
     name = 'problematicname'
 
@@ -352,9 +380,48 @@ class TestLength32(TestBase):
 
     name = 'len32'
 
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        # stop words when fixing/shortening, ie remove these words entirely
+        self._stopwords = ('pictures', 'picture', 'images', 'image', 'img')
+
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
         if len(path.name) > 32:
+            self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
+
+    def experimentalfix(self, path, pathstat):
+        # demo = ''.join(['#'] * 32)
+        # click.echo(demo)
+        # click.echo(path.name)
+        max_length = 32 - len(path.suffix)
+        new_stem_str = slugify(path.stem, max_length=max_length, word_boundary=False, stopwords=self._stopwords)
+        new_path = path.with_name(new_stem_str + path.suffix)
+        click.echo(new_path.name)
+        if new_path.exists():
+            click.echo('ERROR: Already exists!')
+        else:
+            pass
+            # path.rename(new_path)
+    # other ideas
+    # https://grokbase.com/t/python/python-list/085jmdej9z/compress-a-string
+    # https://www.gsp.com/cgi-bin/man.cgi?topic=humanzip
+
+
+@linterdex.register
+class TestNonAscii(TestBase):
+    """Test if filename is encoded in non ascii."""
+
+    name = 'non-ascii'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if unidecode(path.name) != path.name:
+            # click.echo('%s -> %s' % (path.name, newname))
             self.add_failed(path)
             return False
         else:
@@ -368,10 +435,15 @@ class FSLinter():
     def __init__(self):  # noqa: D107
         self.tests = []
         self._verbose = True
+        self._fix = False
 
     def set_verbose(self, verbose):
         """Set the verbosity."""
         self._verbose = verbose
+
+    def set_fix(self, fix):
+        """Set the 'fix' option."""
+        self._fix = fix
 
     def register(self, test):
         """Register an initialized test based on TestBase."""
@@ -385,6 +457,11 @@ class FSLinter():
         if failures:
             click.secho('FAIL[%s]:' % ','.join(sorted(test.name for test in failures)), nl=False, fg='red', bold=False)
             click.echo('%s' % (path))
+            if self._fix:
+                for failure in failures:
+                    if callable(getattr(failure, 'fix', None)):
+                        logger.debug("Attempting to fix failure of '%s' for '%s'", failure.name, path)
+                        failure.fix(path, st)
         else:
             if self._verbose:
                 click.secho('OK:', nl=False, fg='green', bold=False)
@@ -406,6 +483,30 @@ def readlines(fname):
         return ()
 
 
+def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
+    """Walk the filesystem and yield paths."""
+    for start_path in (os.path.expanduser(p) for p in paths):
+        if os.path.isdir(start_path):
+            for root, dirs, files in os.walk(start_path):
+                if not skip_vcs_ignore and '.gitignore' in files:
+                    logger.debug('.gitignore found')
+                    local_ignore_spec = pathspec.PathSpec(
+                        map(pathspec.patterns.GitWildMatchPattern, exclude + readlines(os.path.join(root, '.gitignore')))
+                    )
+                else:
+                    local_ignore_spec = ignore_spec
+                dirs[:] = [d for d in dirs if not local_ignore_spec.match_file(d)]
+                for relpath in dirs:
+                    yield Path(os.path.join(root, relpath))
+                files[:] = [f for f in files if not local_ignore_spec.match_file(f)]
+                for relpath in sorted(files):  # TODO revert to non sorted
+                    yield Path(os.path.join(root, relpath))
+        elif os.path.isfile(start_path):
+            yield Path(start_path)
+        else:
+            raise ValueError('Invalid argument %r' % start_path)
+
+
 @click.command()
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
 @click.option('-D', '--debug', is_flag=True, default=False)
@@ -413,11 +514,12 @@ def readlines(fname):
 @click.option('-l', '--list-tests', is_flag=True, default=False)
 @click.option('-s', '--skip-test', multiple=True)
 @click.option('--statistics', is_flag=True, default=False)
+@click.option('--fix', is_flag=True, default=False)
 @click.option(
-    '--ignore', 'ignore',
+    '-e', '--exclude', 'exclude',
     metavar='PATTERN',
     multiple=True,
-    help='Ignore files/directories matching PATTERN.'
+    help='Exclude files/directories matching PATTERN.'
 )
 @click.option(
     '-U', '--skip-vcs-ignores', 'skip_vcs_ignore',
@@ -426,60 +528,43 @@ def readlines(fname):
     help='Ignore VCS ignore files.'
 )
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
-def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_vcs_ignore, statistics):
+def fs_lint(paths, skip_test, list_tests, exclude, verbose, debug, hidden, skip_vcs_ignore, statistics, fix):
     """Find paths that fail tests."""
+    filetests = ClassRegistryInstanceCache(linterdex)
+    linter = FSLinter()
+    linter.set_verbose(verbose)
+    linter.set_fix(fix)
+    if list_tests:
+        for available_test in sorted(linterdex.keys()):
+            click.secho('%s: ' % available_test, nl=False, bold=True)
+            click.echo(filetests[available_test].__doc__)
+        return 0
     if not paths:
         with click.Context(fs_lint, info_name='fs-lint') as ctx:
             click.echo(fs_lint.get_help(ctx))
             sys.exit(1)
     if debug:
         logger.setLevel(logging.DEBUG)
-    filetests = ClassRegistryInstanceCache(linterdex)
-    linter = FSLinter()
-    linter.set_verbose(verbose)
-    if list_tests:
-        for available_test in sorted(linterdex.keys()):
-            click.secho('%s: ' % available_test, nl=False, bold=True)
-            click.echo(filetests[available_test].__doc__)
-        return 0
 
-    if not ignore:
-        ignore = ()
+    if not exclude:
+        exclude = ()
     if not skip_vcs_ignore:
         # get global gitignore patterns
         gitexcludes = subprocess.check_output(  # noqa: S607
             'git config --path --get core.excludesfile 2>/dev/null',
             encoding='UTF-8',
             shell=True).strip()  # noqa: S602
-        ignore += readlines(gitexcludes)
+        exclude += readlines(gitexcludes)
     if not hidden:
-        ignore = ('.*',) + ignore  # assume .* matches most often and takes precedence
-    ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, ignore))
+        exclude = ('.*',) + exclude  # assume .* matches most often and takes precedence
+    ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, exclude))
 
     for available_test in linterdex.keys():
         if available_test not in skip_test:
             linter.register(filetests[available_test])
 
-    for start_path in (os.path.expanduser(p) for p in paths):
-        if os.path.isdir(start_path):
-            for root, dirs, files in os.walk(start_path):
-                if not skip_vcs_ignore and '.gitignore' in files:
-                    logger.debug('.gitignore found')
-                    local_ignore_spec = pathspec.PathSpec(
-                        map(pathspec.patterns.GitWildMatchPattern, ignore + readlines(os.path.join(root, '.gitignore')))
-                    )
-                else:
-                    local_ignore_spec = ignore_spec
-                dirs[:] = [d for d in dirs if not local_ignore_spec.match_file(d)]
-                for relpath in dirs:
-                    linter(Path(os.path.join(root, relpath)))
-                files[:] = [f for f in files if not local_ignore_spec.match_file(f)]
-                for relpath in files:
-                    linter(Path(os.path.join(root, relpath)))
-        elif os.path.isfile(start_path):
-            linter(Path(start_path))
-        else:
-            raise ValueError('Invalid argument %r' % start_path)
+    for path in walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
+        linter(path)
 
     if statistics:
         click.secho('Statistics', bold=True)
@@ -491,7 +576,3 @@ def fs_lint(paths, skip_test, list_tests, ignore, verbose, debug, hidden, skip_v
             else:
                 click.secho('%s: ' % test.name, nl=False, bold=False)
                 click.secho('%i' % test.total, fg='green', bold=False)
-
-#     import operator
-#     sorted_x = sorted(filetests['wronglyexecutable'].suffixes.items(), key=operator.itemgetter(1))
-#     print(sorted_x)

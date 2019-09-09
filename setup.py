@@ -27,9 +27,10 @@ setup(
         'IPy >= 0.83',  # onlinepingheck
         'unidecode >= 0.04',  # transliterate
         'mutagen >= 1.39',  # mp3 tags
-        'class-registry >= 2.1.2',  # fs-lint
+        'phx-class-registry >= 3.0.5',  # fs-lint
         'pathspec>=0.5.9',  # fs-lint
         'six',
+        'python-slugify>=3.0.3',  # fs-lint
     ],
     tests_require=['pytest>=3.0.7'],
     entry_points={
