@@ -395,6 +395,7 @@ class TestLength32(TestBase):
             return True
 
     def experimentalfix(self, path, pathstat):
+        """Attempt to rename the file to a shorter variant."""
         # demo = ''.join(['#'] * 32)
         # click.echo(demo)
         # click.echo(path.name)
@@ -491,7 +492,10 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
                 if not skip_vcs_ignore and '.gitignore' in files:
                     logger.debug('.gitignore found')
                     local_ignore_spec = pathspec.PathSpec(
-                        map(pathspec.patterns.GitWildMatchPattern, exclude + readlines(os.path.join(root, '.gitignore')))
+                        map(
+                            pathspec.patterns.GitWildMatchPattern,
+                            exclude + readlines(os.path.join(root, '.gitignore'))
+                        )
                     )
                 else:
                     local_ignore_spec = ignore_spec
