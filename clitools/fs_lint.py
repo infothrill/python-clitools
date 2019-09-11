@@ -112,11 +112,7 @@ class TestWorldReadable(TestBase):
     def fix(self, path, pathstat):
         """Fix permissions."""
         current = stat.S_IMODE(pathstat.st_mode)
-        os.chmod(path, current & ~stat.S_IROTH)
-        # and once more for executable bit:
-        pathstat = os.lstat(path)
-        current = stat.S_IMODE(pathstat.st_mode)
-        os.chmod(path, current & ~stat.S_IXOTH)
+        os.chmod(path, current & ~stat.S_IROTH & ~stat.S_IXOTH)
         # & takes only those bits that both numbers have
         # ~ inverts the bits of a number
         # so x & ~y takes those bits that x has and that y doesn't have
@@ -188,11 +184,7 @@ class TestOtherReadableDirs(TestBase):
     def fix(self, path, pathstat):
         """Remove 'other' readable and 'other' executable bit."""
         current = stat.S_IMODE(pathstat.st_mode)
-        os.chmod(path, current & ~stat.S_IROTH)
-        # and once more for executable bit:
-        pathstat = os.lstat(path)
-        current = stat.S_IMODE(pathstat.st_mode)
-        os.chmod(path, current & ~stat.S_IXOTH)
+        os.chmod(path, current & ~stat.S_IROTH & ~stat.S_IXOTH)
         # & takes only those bits that both numbers have
         # ~ inverts the bits of a number
         # so x & ~y takes those bits that x has and that y doesn't have
@@ -275,6 +267,14 @@ class TestWronglyExecutable(TestBase):
                     self.suffixes[path.suffix.lower()] += 1
         self.add_ok(path)
         return True
+
+    def fix(self, path, pathstat):
+        """Fix permissions."""
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IXOTH & ~stat.S_IXGRP & ~stat.S_IXUSR)
+        # & takes only those bits that both numbers have
+        # ~ inverts the bits of a number
+        # so x & ~y takes those bits that x has and that y doesn't have
 
 
 @linterdex.register
@@ -437,6 +437,7 @@ class FSLinter():
         self.tests = []
         self._verbose = True
         self._fix = False
+        self._experimental = False
 
     def set_verbose(self, verbose):
         """Set the verbosity."""
@@ -445,6 +446,10 @@ class FSLinter():
     def set_fix(self, fix):
         """Set the 'fix' option."""
         self._fix = fix
+
+    def set_experimental(self, experimental):
+        """Set the 'experimental' option."""
+        self._experimental = experimental
 
     def register(self, test):
         """Register an initialized test based on TestBase."""
@@ -461,6 +466,9 @@ class FSLinter():
             if self._fix:
                 for failure in failures:
                     if callable(getattr(failure, 'fix', None)):
+                        logger.debug("Attempting to fix failure of '%s' for '%s'", failure.name, path)
+                        failure.fix(path, st)
+                    elif self._experimental and callable(getattr(failure, 'experimentalfix', None)):
                         logger.debug("Attempting to fix failure of '%s' for '%s'", failure.name, path)
                         failure.fix(path, st)
         else:
@@ -514,6 +522,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.command()
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
 @click.option('-D', '--debug', is_flag=True, default=False)
+@click.option('--experimental', is_flag=True, default=False, help='Enable experimental features.')
 @click.option('--hidden', is_flag=True, default=False, help='Search hidden files.')
 @click.option('-l', '--list-tests', is_flag=True, default=False)
 @click.option('-s', '--skip-test', multiple=True)
@@ -532,7 +541,10 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
     help='Ignore VCS ignore files.'
 )
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
-def fs_lint(paths, skip_test, list_tests, exclude, verbose, debug, hidden, skip_vcs_ignore, statistics, fix):
+def fs_lint(
+    paths, skip_test, list_tests, exclude, verbose, debug, hidden,
+    skip_vcs_ignore, statistics, fix, experimental
+):
     """Find paths that fail tests."""
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
