@@ -58,10 +58,10 @@ class TestBase():
 
 
 @linterdex.register
-class TestNonRegularFiles(TestBase):
+class TestTypeNonRegular(TestBase):
     """Test if path is one of file, directory, symbolic link."""
 
-    name = 'nonregular'
+    name = 'type-non-regular'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -76,10 +76,10 @@ class TestNonRegularFiles(TestBase):
 
 
 @linterdex.register
-class TestWorldWritable(TestBase):
+class TestPermissionsWorldWritable(TestBase):
     """Test for world writable files."""
 
-    name = 'worldwritable'
+    name = 'permissions-world-writable'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -92,10 +92,10 @@ class TestWorldWritable(TestBase):
 
 
 @linterdex.register
-class TestWorldReadable(TestBase):
+class TestPermissionsWorldReadable(TestBase):
     """Test for world readable/executable paths."""
 
-    name = 'worldreadable'
+    name = 'permissions-world-readable'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -119,10 +119,10 @@ class TestWorldReadable(TestBase):
 
 
 @linterdex.register
-class TestSuid(TestBase):
+class TestPermissionsSuid(TestBase):
     """Test for paths with SUID bit."""
 
-    name = 'suid'
+    name = 'permissions-suid'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -135,10 +135,10 @@ class TestSuid(TestBase):
 
 
 @linterdex.register
-class TestBrokenSymlink(TestBase):
+class TestTypeBrokenSymlink(TestBase):
     """Test for broken symlinks."""
 
-    name = 'brokensymlink'
+    name = 'type-broken-symlink'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -151,10 +151,10 @@ class TestBrokenSymlink(TestBase):
 
 
 @linterdex.register
-class TestSgid(TestBase):
+class TestPermissionsSgid(TestBase):
     """Test for paths with SGID bit."""
 
-    name = 'sgid'
+    name = 'permissions-sgid'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -167,10 +167,10 @@ class TestSgid(TestBase):
 
 
 @linterdex.register
-class TestOtherReadableDirs(TestBase):
+class TestPermissionsWorldReadableDir(TestBase):
     """Test for 'other' readable dirs."""
 
-    name = 'worldreadabledir'
+    name = 'permissions-world-readable-dir'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -191,10 +191,10 @@ class TestOtherReadableDirs(TestBase):
 
 
 @linterdex.register
-class TestOwner(TestBase):
+class TestPermissionsOwner(TestBase):
     """Test for file ownership."""
 
-    name = 'owner'
+    name = 'permissions-owner'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -211,10 +211,10 @@ class TestOwner(TestBase):
 
 
 @linterdex.register
-class TestGroup(TestBase):
+class TestPermissionsGroup(TestBase):
     """Test for group ownership."""
 
-    name = 'group'
+    name = 'permissions-group'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -231,10 +231,10 @@ class TestGroup(TestBase):
 
 
 @linterdex.register
-class TestWronglyExecutable(TestBase):
+class TestPermissionsWronglyExecutable(TestBase):
     """Test for executable bit on known file types."""
 
-    name = 'wronglyexecutable'
+    name = 'permissions-wrongly-executable'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -278,10 +278,10 @@ class TestWronglyExecutable(TestBase):
 
 
 @linterdex.register
-class TestUpperCaseExtension(TestBase):
+class TestNameUpperCaseExtension(TestBase):
     """Test for filenames with upper case extensions."""
 
-    name = 'uppercaseextension'
+    name = 'name-uppercase-extension'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -302,14 +302,14 @@ class TestUpperCaseExtension(TestBase):
 
 
 @linterdex.register
-class TestOrphanExecutable(TestBase):
+class TestPermissionsOrphanExecutableBit(TestBase):
     """Test for files with an orphaned executable bit.
 
     An orphaned executable bit is an executable bit set without an according
     read bit set.
     """
 
-    name = 'orphanexecutablebit'
+    name = 'permissions-orphan-executable-bit'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -328,10 +328,10 @@ class TestOrphanExecutable(TestBase):
 
 
 @linterdex.register
-class TestTempfile(TestBase):
-    """Test if file seems to be a temporary file."""
+class TestNameTempfile(TestBase):
+    """Test if file seems to be a temporary file, based on its name."""
 
-    name = 'tempfile'
+    name = 'name-tempfile'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -348,10 +348,10 @@ class TestTempfile(TestBase):
 
 
 @linterdex.register
-class TestProblematicFilenames(TestBase):
-    """Test if file has a problematic name, in particular with regards to commands."""
+class TestNameDangerous(TestBase):
+    """Test if file has a dangerous name, in particular with regards to commands."""
 
-    name = 'problematicname'
+    name = 'name-dangerous'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -362,6 +362,7 @@ class TestProblematicFilenames(TestBase):
             r'-.*',  # - at start of name
             r'.*\s-.*',  # - after space in name
         ]
+        # TODO: test for shell meta characters?
         self._regex = re.compile(r'^(%s)$' % '|'.join(expressions))
 
     def test(self, path, pathstat):
@@ -375,10 +376,26 @@ class TestProblematicFilenames(TestBase):
 
 
 @linterdex.register
-class TestLength32(TestBase):
+class TestSizeZero(TestBase):
+    """Test if file has 0 byte size."""
+
+    name = 'size-zero'
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if pathstat.st_size == 0:
+            self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
+
+
+@linterdex.register
+class TestNameLength32(TestBase):
     """Test if filename is longer than 32 characters."""
 
-    name = 'len32'
+    name = 'name-len32'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -414,10 +431,10 @@ class TestLength32(TestBase):
 
 
 @linterdex.register
-class TestNonAscii(TestBase):
+class TestNameNonAscii(TestBase):
     """Test if filename is encoded in non ascii."""
 
-    name = 'non-ascii'
+    name = 'name-non-ascii'
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
