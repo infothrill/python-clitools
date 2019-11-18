@@ -93,7 +93,7 @@ def pwgen(length=32, exclude=None):
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         raise Exception('pwgen: %s %s' % (stdout, stderr))
-    return stdout.strip()
+    return stdout.strip().decode('ascii')
 
 
 @click.command()
