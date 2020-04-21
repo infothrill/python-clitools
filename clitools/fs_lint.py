@@ -18,6 +18,8 @@ from class_registry import ClassRegistry, ClassRegistryInstanceCache
 import click
 import pathspec
 from slugify import slugify
+from colorama import Fore, Style
+import difflib
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -430,6 +432,62 @@ class TestNameLength32(TestBase):
     # https://www.gsp.com/cgi-bin/man.cgi?topic=humanzip
 
 
+def colorize_differences_inline(a, b):
+    """
+    Highlight differences between strings a and b by creating a new string with custom highlighting.
+
+    Example:
+        ("filewithspeçialcharsüäö.txt", "filewithspecialcharsuao.txt")
+        returns:
+        "filewithspe{ç>c}ialchars{üäö>uao}.txt"
+    """
+    matcher = difflib.SequenceMatcher(None, a, b)
+    def process_tag(tag, i1, i2, j1, j2):
+        if tag == 'replace':
+            return Style.DIM + '{' + Style.NORMAL + Fore.RED + matcher.a[i1:i2] + Fore.RESET + Style.DIM + '>' + Style.NORMAL + Fore.GREEN + matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+        elif tag == 'delete':
+            return ''.join((Style.DIM, '{-', Style.NORMAL, Fore.RED, matcher.a[i1:i2], Fore.RESET, Style.DIM, '}', Style.NORMAL))
+        elif tag == 'equal':
+            return matcher.a[i1:i2]
+        elif tag == 'insert':
+            return Style.DIM + '{+' + Style.NORMAL + Fore.GREEN + matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+        else:
+            raise ValueError("Unknown tag %r" % tag)
+    return ''.join(process_tag(*t) for t in matcher.get_opcodes())
+
+
+def colorize_differences(a, b):
+    """
+    Highlight differences between strings a and b with ansi color codes.
+    """
+    matcher = difflib.SequenceMatcher(None, a, b)
+    def process_tag_a(tag, i1, i2, j1, j2):
+        if tag == 'replace':
+            return Fore.RED + matcher.a[i1:i2] + Fore.RESET
+        elif tag == 'delete':
+            return Fore.RED + matcher.a[i1:i2] + Fore.RESET
+        elif tag == 'equal':
+            return matcher.a[i1:i2]
+        elif tag == 'insert':
+            return ''
+        else:
+            raise ValueError("Unknown tag %r" % tag)
+    def process_tag_b(tag, i1, i2, j1, j2):
+        if tag == 'replace':
+            return Fore.GREEN + matcher.b[j1:j2] + Fore.RESET
+        elif tag == 'delete':
+            return Fore.GREEN + matcher.a[j1:j2] + Fore.RESET
+        elif tag == 'equal':
+            return matcher.a[i1:i2]
+        elif tag == 'insert':
+            return Fore.GREEN + matcher.b[j1:j2] + Fore.RESET
+        else:
+            raise ValueError("Unknown tag %r" % tag)
+    a = ''.join(process_tag_a(*t) for t in matcher.get_opcodes())
+    b = ''.join(process_tag_b(*t) for t in matcher.get_opcodes())
+    return a, b
+
+
 @linterdex.register
 class TestNameNonAscii(TestBase):
     """Test if filename is encoded in non ascii."""
@@ -438,8 +496,10 @@ class TestNameNonAscii(TestBase):
 
     def test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if unidecode(path.name) != path.name:
-            # click.echo('%s -> %s' % (path.name, newname))
+        a, b = path.name, unidecode(path.name)
+        if a != b:
+            # click.echo(colorize_differences_inline(a, b))
+            # click.echo("%s -> %s" % (colorize_differences(a, b)))
             self.add_failed(path)
             return False
         else:
@@ -541,7 +601,8 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.option('-D', '--debug', is_flag=True, default=False)
 @click.option('--experimental', is_flag=True, default=False, help='Enable experimental features.')
 @click.option('--hidden', is_flag=True, default=False, help='Search hidden files.')
-@click.option('-l', '--list-tests', is_flag=True, default=False)
+@click.option('-l', '--limit', multiple=True, help='Limit to given tests.')
+@click.option('--list-tests', is_flag=True, default=False)
 @click.option('-s', '--skip-test', multiple=True)
 @click.option('--statistics', is_flag=True, default=False)
 @click.option('--fix', is_flag=True, default=False)
@@ -559,7 +620,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 )
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
 def fs_lint(
-    paths, skip_test, list_tests, exclude, verbose, debug, hidden,
+    paths, skip_test, limit, list_tests, exclude, verbose, debug, hidden,
     skip_vcs_ignore, statistics, fix, experimental
 ):
     """Find paths that fail tests."""
@@ -593,7 +654,10 @@ def fs_lint(
     ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, exclude))
 
     for available_test in linterdex.keys():
-        if available_test not in skip_test:
+        if limit:
+            if available_test in limit:
+                linter.register(filetests[available_test])
+        elif available_test not in skip_test:
             linter.register(filetests[available_test])
 
     for path in walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
