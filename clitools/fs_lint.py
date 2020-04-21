@@ -442,25 +442,33 @@ def colorize_differences_inline(a, b):
         "filewithspe{ç>c}ialchars{üäö>uao}.txt"
     """
     matcher = difflib.SequenceMatcher(None, a, b)
+
     def process_tag(tag, i1, i2, j1, j2):
         if tag == 'replace':
-            return Style.DIM + '{' + Style.NORMAL + Fore.RED + matcher.a[i1:i2] + Fore.RESET + Style.DIM + '>' + Style.NORMAL + Fore.GREEN + matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+            return Style.DIM + '{' + Style.NORMAL + Fore.RED + matcher.a[i1:i2] + \
+                Fore.RESET + Style.DIM + '>' + Style.NORMAL + Fore.GREEN + \
+                matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
         elif tag == 'delete':
-            return ''.join((Style.DIM, '{-', Style.NORMAL, Fore.RED, matcher.a[i1:i2], Fore.RESET, Style.DIM, '}', Style.NORMAL))
+            return ''.join(
+                (
+                    Style.DIM, '{-', Style.NORMAL, Fore.RED, matcher.a[i1:i2],
+                    Fore.RESET, Style.DIM, '}', Style.NORMAL
+                )
+            )
         elif tag == 'equal':
             return matcher.a[i1:i2]
         elif tag == 'insert':
-            return Style.DIM + '{+' + Style.NORMAL + Fore.GREEN + matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+            return Style.DIM + '{+' + Style.NORMAL + Fore.GREEN + \
+                matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
         else:
-            raise ValueError("Unknown tag %r" % tag)
+            raise ValueError('Unknown tag %r' % tag)
     return ''.join(process_tag(*t) for t in matcher.get_opcodes())
 
 
 def colorize_differences(a, b):
-    """
-    Highlight differences between strings a and b with ansi color codes.
-    """
+    """Highlight differences between strings a and b with ansi color codes."""
     matcher = difflib.SequenceMatcher(None, a, b)
+
     def process_tag_a(tag, i1, i2, j1, j2):
         if tag == 'replace':
             return Fore.RED + matcher.a[i1:i2] + Fore.RESET
@@ -471,7 +479,8 @@ def colorize_differences(a, b):
         elif tag == 'insert':
             return ''
         else:
-            raise ValueError("Unknown tag %r" % tag)
+            raise ValueError('Unknown tag %r' % tag)
+
     def process_tag_b(tag, i1, i2, j1, j2):
         if tag == 'replace':
             return Fore.GREEN + matcher.b[j1:j2] + Fore.RESET
@@ -482,7 +491,7 @@ def colorize_differences(a, b):
         elif tag == 'insert':
             return Fore.GREEN + matcher.b[j1:j2] + Fore.RESET
         else:
-            raise ValueError("Unknown tag %r" % tag)
+            raise ValueError('Unknown tag %r' % tag)
     a = ''.join(process_tag_a(*t) for t in matcher.get_opcodes())
     b = ''.join(process_tag_b(*t) for t in matcher.get_opcodes())
     return a, b
