@@ -18,7 +18,7 @@ setup(
     description='Collection of CLI tools written in Python',
     packages=find_packages(),
     # https://packaging.python.org/tutorials/distributing-packages/#python-requires
-    python_requires='>=3.5',
+    python_requires='>=3.7',
     setup_requires=['pytest-runner', 'setuptools>=12'],
     license='MIT',
     install_requires=[
@@ -32,6 +32,9 @@ setup(
         'pathspec>=0.5.9',  # fs-lint
         'six',
         'python-slugify>=3.0.3',  # fs-lint
+        # the cli tool autocropscans depends on this to be in the PYTHONPATH,
+        # since it is not packaged fully, it cannot be automatically be installed
+        # https://github.com/msaavedra/autocrop
     ],
     tests_require=['pytest>=3.0.7'],
     entry_points={
@@ -39,6 +42,7 @@ setup(
             'detectencoding = clitools.detectencoding:main',
             'digssh = clitools.digssh:main',
             'fs-lint = clitools.fs_lint:fs_lint',
+            'autocropscans = clitools.autocropscans:main',
             'onlinepingcheck= clitools.onlinepingcheck:main',
             'rndpasswd = clitools.rndpasswd:main',
             'rot13 = clitools.rot13:main',
@@ -50,6 +54,6 @@ setup(
     classifiers=[
         'DO NOT UPLOAD',  # block pypi publication
         'Topic :: Utilities',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ]
 )
