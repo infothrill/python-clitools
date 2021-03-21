@@ -92,6 +92,14 @@ class TestPermissionsWorldWritable(TestBase):
             self.add_ok(path)
             return True
 
+    def fix(self, path, pathstat):
+        """Fix permissions."""
+        current = stat.S_IMODE(pathstat.st_mode)
+        os.chmod(path, current & ~stat.S_IWOTH)
+        # & takes only those bits that both numbers have
+        # ~ inverts the bits of a number
+        # so x & ~y takes those bits that x has and that y doesn't have
+
 
 @linterdex.register
 class TestPermissionsWorldReadable(TestBase):
@@ -302,6 +310,11 @@ class TestNameUpperCaseExtension(TestBase):
             self.add_ok(path)
             return True
 
+    def fix(self, path, pathstat):
+        """Fix upper case extension."""
+        new_path = path.with_name(path.stem + path.suffix.lower())
+        os.rename(path, new_path)
+
 
 @linterdex.register
 class TestPermissionsOrphanExecutableBit(TestBase):
@@ -375,6 +388,12 @@ class TestNameDangerous(TestBase):
         else:
             self.add_ok(path)
             return True
+
+    def experimentalfix(self, path, pathstat):
+        """Fix dangerous names."""
+        # definitely bogus implementation for now
+        npath = path.with_name(path.stem.strip().replace(' -', '-').replace('  ', ' ') + path.suffix)
+        click.echo(npath)
 
 
 @linterdex.register
@@ -556,7 +575,7 @@ class FSLinter():
                         failure.fix(path, st)
                     elif self._experimental and callable(getattr(failure, 'experimentalfix', None)):
                         logger.debug("Attempting to fix failure of '%s' for '%s'", failure.name, path)
-                        failure.fix(path, st)
+                        failure.experimentalfix(path, st)
         else:
             if self._verbose:
                 click.secho('OK:', nl=False, fg='green', bold=False)
@@ -637,6 +656,7 @@ def fs_lint(
     linter = FSLinter()
     linter.set_verbose(verbose)
     linter.set_fix(fix)
+    linter.set_experimental(experimental)
     if list_tests:
         for available_test in sorted(linterdex.keys()):
             click.secho('%s: ' % available_test, nl=False, bold=True)
