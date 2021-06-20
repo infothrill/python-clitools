@@ -12,14 +12,14 @@ import re
 from pathlib import Path
 import subprocess  # noqa: S404
 import logging
-from unidecode import unidecode
+import difflib
 
+from unidecode import unidecode
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
 import click
 import pathspec
 from slugify import slugify
 from colorama import Fore, Style
-import difflib
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -392,8 +392,9 @@ class TestNameDangerous(TestBase):
     def experimentalfix(self, path, pathstat):
         """Fix dangerous names."""
         # definitely bogus implementation for now
-        npath = path.with_name(path.stem.strip().replace(' -', '-').replace('  ', ' ') + path.suffix)
-        click.echo(npath)
+        new_path = path.with_name(path.stem.strip().replace(' -', '-').replace('  ', ' ') + path.suffix)
+        click.echo(new_path)
+        # os.rename(path, new_path)
 
 
 @linterdex.register
@@ -562,7 +563,7 @@ class FSLinter():
 
     def __call__(self, path):
         """Run all registered tests on the specified path."""
-        logger.debug('testing: %s' % path)
+        logger.debug('testing: %s', path)
         st = path.lstat()
         failures = [test for test in self.tests if not test(path, st)]
         if failures:
@@ -614,6 +615,8 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
                     local_ignore_spec = ignore_spec
                 dirs[:] = [d for d in dirs if not local_ignore_spec.match_file(d)]
                 for relpath in dirs:
+                    # abspath = Path(os.path.join(root, relpath))
+                    # click.echo(abspath.relative_to(start_path))
                     yield Path(os.path.join(root, relpath))
                 files[:] = [f for f in files if not local_ignore_spec.match_file(f)]
                 for relpath in sorted(files):  # TODO revert to non sorted
