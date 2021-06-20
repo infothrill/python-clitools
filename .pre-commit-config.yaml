@@ -1,19 +1,15 @@
+---
 # See http://pre-commit.com for more information
 # See http://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    sha: v1.3.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    sha: v4.0.1
     hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: check-yaml
-    - id: check-added-large-files
-    - id: check-case-conflict
-    - id: fix-encoding-pragma
-    - id: check-docstring-first
-    - id: check-symlinks  # - Checks for symlinks which do not point to anything.
-
-#-   repo: git://github.com/pre-commit/mirrors-pylint
-#    sha: v1.8.1  # Use the sha / tag you want to point at
-#    hooks:
-#    - id: pylint
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: fix-encoding-pragma
+      - id: check-docstring-first
+      - id: check-symlinks  # - Checks for symlinks which do not point to anything.
