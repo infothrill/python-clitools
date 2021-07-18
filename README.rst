@@ -13,13 +13,13 @@ Installation
 
    python setup.py install
 
-or, with pipsi:
+or, with pipx:
 
 .. code-block:: bash
 
-    pipsi install /home/infothrill/src/git/cli-tools/
+    pipx install /home/infothrill/src/git/cli-tools/
 
-    pipsi install git+https://github.com/infothrill/python-clitools.git#egg=clitools
+    pipx install git+https://github.com/infothrill/python-clitools.git#egg=clitools
 
 Requirements
 ------------

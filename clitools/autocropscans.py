@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Dirty hack to script scanning and cropping old photos."""
+
 import os
 import fnmatch
 from pathlib import Path
@@ -12,17 +14,20 @@ from autocrop import MultiPartImage, Background
 
 
 def store_as_jpg(photo, directory, basename, optimize=True, quality=85):
+    """Store given photo in directory as jpeg."""
     target = os.path.join(directory, '%s.jpg' % basename)
     new = photo.convert(mode='RGB')
     new.save(target, optimize=optimize, quality=quality)
 
 
 def store_as_tif(photo, directory, basename, compression='tiff_deflate'):
+    """Store given photo in directory as tiff."""
     target = os.path.join(directory, '%s.tif' % basename)
     photo.save(target, compression=compression)
 
 
 def autocrop_image(fname, outpath, background, dpi=600):
+    """Autocrop given file and store cropped results."""
     stem = Path(fname).stem
     scanned_image = Image.open(fname)
     cropped_images = MultiPartImage(scanned_image, background, dpi=600)
@@ -37,6 +42,7 @@ def autocrop_image(fname, outpath, background, dpi=600):
 @click.command()
 @click.argument('paths', type=click.Path(exists=True), nargs=-1)
 def main(paths):
+    """Run main program."""
     scan_path = paths[-1]
     out_path = os.path.join(scan_path, 'autocropped')
     # A saved scan with the scanner empty.
