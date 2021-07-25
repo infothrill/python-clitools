@@ -6,8 +6,8 @@ on:
   pull_request: {}
 
   # Scan all files on branches, block on any issues
-  # push:
-  #   branches: ["master", "main"]
+  push:
+    branches: ["master", "main"]
 
 jobs:
   semgrep:
@@ -24,6 +24,7 @@ jobs:
           config: >- # more at semgrep.dev/explore
             p/security-audit
             p/secrets
+            p/ci
 
         # == Optional settings in the `with:` block
 
