@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess  # noqa: S404
 import logging
 import difflib
+import unicodedata
 
 from unidecode import unidecode
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
@@ -360,6 +361,30 @@ class TestNameTempfile(TestBase):
         else:
             self.add_ok(path)
             return True
+
+
+@linterdex.register
+class TestNameControlChars(TestBase):
+    """Test if filename contains control characters."""
+
+    name = 'name-controlchars'
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if any(unicodedata.category(char)[0] == 'C' for char in path.name):
+            self.add_failed(path)
+            return False
+        else:
+            self.add_ok(path)
+            return True
+
+    def fix(self, path, pathstat):
+        """Fix dangerous names."""
+        new_path = path.with_name(''.join(ch for ch in path.name if unicodedata.category(ch)[0] != 'C'))
+        os.rename(path, new_path)
 
 
 @linterdex.register
