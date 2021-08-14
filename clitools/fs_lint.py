@@ -701,11 +701,15 @@ def fs_lint(
         exclude = ()
     if not skip_vcs_ignore:
         # get global gitignore patterns
-        gitexcludes = subprocess.check_output(  # noqa: S607
-            'git config --path --get core.excludesfile 2>/dev/null',
-            encoding='UTF-8',
-            shell=True).strip()  # noqa: S602
-        exclude += readlines(gitexcludes)
+        try:
+            gitexcludes = subprocess.check_output(  # noqa: S607
+                'git config --path --get core.excludesfile 2>/dev/null',
+                encoding='UTF-8',
+                shell=True).strip()  # noqa: S602
+        except subprocess.CalledProcessError:
+            pass  # git may not be installed or no config may be present
+        else:
+            exclude += readlines(gitexcludes)
     if not hidden:
         exclude = ('.*',) + exclude  # assume .* matches most often and takes precedence
     ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, exclude))
