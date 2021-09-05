@@ -36,6 +36,7 @@ class TestBase():
 
     def __init__(self):  # noqa: D107
         self.failed = []
+        self.ok = []
         self.total = 0  # count total of tests performed
 
     def add_failed(self, path):
@@ -44,7 +45,7 @@ class TestBase():
 
     def add_ok(self, path):
         """Mark the given path as ok."""
-        pass
+        self.ok.append(path)
 
     def count_failed(self):
         """Return amount of failed tests."""
@@ -569,6 +570,11 @@ class FSLinter():
         self._verbose = True
         self._fix = False
         self._experimental = False
+        self._color = True
+
+    def set_color(self, color):
+        """Set the 'color' option."""
+        self._color = color
 
     def set_verbose(self, verbose):
         """Set the verbosity."""
@@ -592,8 +598,15 @@ class FSLinter():
         st = path.lstat()
         failures = [test for test in self.tests if not test(path, st)]
         if failures:
-            click.secho('FAIL[%s]:' % ','.join(sorted(test.name for test in failures)), nl=False, fg='red', bold=False)
-            click.echo('%s' % (path))
+            click.secho(
+                'FAIL[%s]:' % ','.join(sorted(test.name for test in failures)),
+                nl=False,
+                fg='red',
+                bold=False,
+                color=self._color
+            )
+            # https://click.palletsprojects.com/en/8.0.x/utils/#printing-filenames
+            click.echo(click.format_filename(path))
             if self._fix:
                 for failure in failures:
                     if callable(getattr(failure, 'fix', None)):
@@ -604,8 +617,8 @@ class FSLinter():
                         failure.experimentalfix(path, st)
         else:
             if self._verbose:
-                click.secho('OK:', nl=False, fg='green', bold=False)
-                click.echo('%s' % (path))
+                click.secho('OK:', nl=False, fg='green', bold=False, color=self._color)
+                click.echo(click.format_filename(path))
 
 
 def readlines(fname):
@@ -644,7 +657,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
                     # click.echo(abspath.relative_to(start_path))
                     yield Path(os.path.join(root, relpath))
                 files[:] = [f for f in files if not local_ignore_spec.match_file(f)]
-                for relpath in sorted(files):  # TODO revert to non sorted
+                for relpath in files:
                     yield Path(os.path.join(root, relpath))
         elif os.path.isfile(start_path):
             yield Path(start_path)
@@ -662,6 +675,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.option('-s', '--skip-test', multiple=True)
 @click.option('--statistics', is_flag=True, default=False)
 @click.option('--fix', is_flag=True, default=False)
+@click.option('--color', default='auto', type=click.Choice(['auto', 'never', 'always'], case_sensitive=False))
 @click.option(
     '-e', '--exclude', 'exclude',
     metavar='PATTERN',
@@ -677,7 +691,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
 def fs_lint(
     paths, skip_test, limit, list_tests, exclude, verbose, debug, hidden,
-    skip_vcs_ignore, statistics, fix, experimental
+    skip_vcs_ignore, statistics, fix, experimental, color
 ):
     """Find paths that fail tests."""
     filetests = ClassRegistryInstanceCache(linterdex)
@@ -685,15 +699,21 @@ def fs_lint(
     linter.set_verbose(verbose)
     linter.set_fix(fix)
     linter.set_experimental(experimental)
+    if color.lower() == 'never':  # color: {auto,always,never}
+        color = False
+    else:
+        color = True
+    linter.set_color(color)
+
     if list_tests:
         for available_test in sorted(linterdex.keys()):
-            click.secho('%s: ' % available_test, nl=False, bold=True)
+            click.secho('%s: ' % available_test, nl=False, bold=True, color=color)
             click.echo(filetests[available_test].__doc__)
         return 0
     if not paths:
         with click.Context(fs_lint, info_name='fs-lint') as ctx:
             click.echo(fs_lint.get_help(ctx))
-            sys.exit(1)
+            ctx.exit(1)
     if debug:
         logger.setLevel(logging.DEBUG)
 
@@ -725,12 +745,14 @@ def fs_lint(
         linter(path)
 
     if statistics:
-        click.secho('Statistics', bold=True)
+        click.secho('Statistics', bold=True, color=color)
         for test in linter.tests:
             if test.count_failed() > 0:
-                click.secho('%s: ' % test.name, nl=False, bold=False)
-                click.secho('%i' % test.count_failed(), fg='red', nl=False, bold=False)
-                click.secho('/%i' % (test.total - test.count_failed()), fg='green', bold=False)
+                click.secho('%s: ' % test.name, nl=False, bold=False, color=color)
+                click.secho('%i' % test.count_failed(), fg='red', nl=False, bold=False, color=color)
+                click.secho('/%i' % (test.total - test.count_failed()), fg='green', bold=False, color=color)
             else:
-                click.secho('%s: ' % test.name, nl=False, bold=False)
-                click.secho('%i' % test.total, fg='green', bold=False)
+                click.secho('%s: ' % test.name, nl=False, bold=False, color=color)
+                click.secho('%i' % test.total, fg='green', bold=False, color=color)
+    if any(test.count_failed() > 0 for test in linter.tests):
+        sys.exit(1)

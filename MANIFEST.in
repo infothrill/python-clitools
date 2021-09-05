@@ -1,0 +1,7 @@
+include *.rst
+include LICENSE
+include example.ini
+recursive-include clitools *.py
+recursive-include clitools/tests/resources *
+global-exclude *.py[co]
+recursive-exclude packaging *

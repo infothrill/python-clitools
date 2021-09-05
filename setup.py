@@ -52,6 +52,7 @@ setup(
             'tomp3 = clitools.tomp3:main',
         ]
     },
+    package_data={'clitools/tests/resources': ['clitools/tests/resources/*.ini']},
     data_files=[],
     classifiers=[
         'DO NOT UPLOAD',  # block pypi publication
