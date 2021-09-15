@@ -1,0 +1,12 @@
+---
+- id: fs-lint
+  name: Lint filesystem
+  description: This hook lints filenames.
+  entry: fs-lint
+  language: python
+  types: []
+  args:
+    - -s
+    - permissions-world-readable
+    - -s
+    - permissions-world-readable-dir

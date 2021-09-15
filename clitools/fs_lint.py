@@ -51,9 +51,18 @@ class TestBase():
         """Return amount of failed tests."""
         return len(self.failed)
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         raise NotImplementedError('Must be implemented in subclass.')
+
+    def test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if self._test(path, pathstat):
+            self.add_ok(path)
+            return True
+        else:
+            self.add_failed(path)
+            return False
 
     def __call__(self, path, pathstat):
         """Run all test on the specified path and stat object."""
@@ -67,15 +76,13 @@ class TestTypeNonRegular(TestBase):
 
     name = 'type-non-regular'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if not stat.S_ISDIR(pathstat.st_mode) \
             and not stat.S_ISREG(pathstat.st_mode) \
                 and not stat.S_ISLNK(pathstat.st_mode):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -85,13 +92,11 @@ class TestPermissionsWorldWritable(TestBase):
 
     name = 'permissions-world-writable'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_IWOTH):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def fix(self, path, pathstat):
@@ -109,16 +114,14 @@ class TestPermissionsWorldReadable(TestBase):
 
     name = 'permissions-world-readable'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         # we include "other executable" in this test
         # exclude symbolic links from this test
         if not stat.S_ISLNK(pathstat.st_mode) and (bool(pathstat.st_mode & stat.S_IROTH) or
                                                    bool(pathstat.st_mode & stat.S_IXOTH)):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def fix(self, path, pathstat):
@@ -136,13 +139,11 @@ class TestPermissionsSuid(TestBase):
 
     name = 'permissions-suid'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_ISUID):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -152,13 +153,11 @@ class TestTypeBrokenSymlink(TestBase):
 
     name = 'type-broken-symlink'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if stat.S_ISLNK(pathstat.st_mode) and not os.path.exists(path):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -168,13 +167,11 @@ class TestPermissionsSgid(TestBase):
 
     name = 'permissions-sgid'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_ISGID):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -184,13 +181,11 @@ class TestPermissionsWorldReadableDir(TestBase):
 
     name = 'permissions-world-readable-dir'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if path.is_dir() and (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH)):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def fix(self, path, pathstat):
@@ -212,13 +207,11 @@ class TestPermissionsOwner(TestBase):
         super().__init__()
         self._uid = os.getuid()
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if pathstat.st_uid != self._uid:
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -232,13 +225,11 @@ class TestPermissionsGroup(TestBase):
         super().__init__()
         self._gid = os.getgid()
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if pathstat.st_gid != self._gid:
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -263,7 +254,7 @@ class TestPermissionsWronglyExecutable(TestBase):
         self.suffixes = {}  # keep an index count of all non-matched, executable extensions
         # useful for optimizing / debugging
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         # exclude directories and symbolic links from this test
         if not stat.S_ISDIR(pathstat.st_mode) and not stat.S_ISLNK(pathstat.st_mode):
@@ -271,13 +262,11 @@ class TestPermissionsWronglyExecutable(TestBase):
                 bool(pathstat.st_mode & stat.S_IXGRP) or \
                     bool(pathstat.st_mode & stat.S_IXOTH):
                 if path.suffix.lower() in self._extensions:
-                    self.add_failed(path)
                     return False
                 else:
                     if path.suffix.lower() not in self.suffixes:
                         self.suffixes[path.suffix.lower()] = 0
                     self.suffixes[path.suffix.lower()] += 1
-        self.add_ok(path)
         return True
 
     def fix(self, path, pathstat):
@@ -301,15 +290,13 @@ class TestNameUpperCaseExtension(TestBase):
         # TODO:
         # self._parts_exceptions = ( ("CVS", "Entries.Log"), )
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if (not stat.S_ISDIR(pathstat.st_mode) and
                 (path.suffix not in self._ok_extensions and
                     path.suffix.lower() != path.suffix)):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def fix(self, path, pathstat):
@@ -328,19 +315,15 @@ class TestPermissionsOrphanExecutableBit(TestBase):
 
     name = 'permissions-orphan-executable-bit'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if bool(pathstat.st_mode & stat.S_IXUSR) and not bool(pathstat.st_mode & stat.S_IRUSR):
-            self.add_failed(path)
             return False
         elif bool(pathstat.st_mode & stat.S_IXGRP) and not bool(pathstat.st_mode & stat.S_IRGRP):
-            self.add_failed(path)
             return False
         elif bool(pathstat.st_mode & stat.S_IXOTH) and not bool(pathstat.st_mode & stat.S_IROTH):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -354,13 +337,11 @@ class TestNameTempfile(TestBase):
         super().__init__()
         self._regex = re.compile(r'^(core|.*~|dead.letter|,.*|.*\.v|.*\.emacs_[0-9]*|.*\.[Bb][Aa][Kk]|.*\.swp)$')
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if not stat.S_ISDIR(pathstat.st_mode) and self._regex.match(path.name):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -373,19 +354,43 @@ class TestNameControlChars(TestBase):
     def __init__(self):  # noqa: D107
         super().__init__()
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if any(unicodedata.category(char)[0] == 'C' for char in path.name):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def fix(self, path, pathstat):
-        """Fix dangerous names."""
+        """Fix name by removing control chars from name."""
         new_path = path.with_name(''.join(ch for ch in path.name if unicodedata.category(ch)[0] != 'C'))
         os.rename(path, new_path)
+
+
+@linterdex.register
+class TestNameSpaceAtStart(TestBase):
+    """Test if filename starts with one or more spaces."""
+
+    name = 'name-spaceatstart'
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        self._regex = re.compile(r'^\s+(.*)$')  # spaces at start
+
+    def _test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if self._regex.match(path.name):
+            return False
+        else:
+            return True
+
+    def experimentalfix(self, path, pathstat):
+        """Remove space(s) at beginning of name."""
+        result = self._regex.match(path.name)
+        if result:
+            new_path = path.with_name(result.group(1))
+            # click.echo(new_path)
+            os.rename(path, new_path)
 
 
 @linterdex.register
@@ -398,7 +403,6 @@ class TestNameDangerous(TestBase):
         super().__init__()
         expressions = [
             r'.*\s+',  # spaces at end
-            r'\s+.*',  # spaces at start
             r'.*\s\s+.*',  # 2 or more adjacent spaces
             r'-.*',  # - at start of name
             r'.*\s-.*',  # - after space in name
@@ -406,13 +410,11 @@ class TestNameDangerous(TestBase):
         # TODO: test for shell meta characters?
         self._regex = re.compile(r'^(%s)$' % '|'.join(expressions))
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if self._regex.match(path.name):
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def experimentalfix(self, path, pathstat):
@@ -429,13 +431,11 @@ class TestSizeZero(TestBase):
 
     name = 'size-zero'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if pathstat.st_size == 0:
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
@@ -450,13 +450,11 @@ class TestNameLength32(TestBase):
         # stop words when fixing/shortening, ie remove these words entirely
         self._stopwords = ('pictures', 'picture', 'images', 'image', 'img')
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         if len(path.name) > 32:
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
     def experimentalfix(self, path, pathstat):
@@ -549,16 +547,14 @@ class TestNameNonAscii(TestBase):
 
     name = 'name-non-ascii'
 
-    def test(self, path, pathstat):
+    def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         a, b = path.name, unidecode(path.name)
         if a != b:
             # click.echo(colorize_differences_inline(a, b))
             # click.echo("%s -> %s" % (colorize_differences(a, b)))
-            self.add_failed(path)
             return False
         else:
-            self.add_ok(path)
             return True
 
 
