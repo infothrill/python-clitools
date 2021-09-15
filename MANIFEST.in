@@ -5,3 +5,4 @@ recursive-include clitools *.py
 recursive-include clitools/tests/resources *
 global-exclude *.py[co]
 recursive-exclude packaging *
+exclude packaging .pre-commit-hooks.yaml

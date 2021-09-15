@@ -94,7 +94,8 @@ class TestPermissionsWorldWritable(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if bool(pathstat.st_mode & stat.S_IWOTH):
+        # exclude symbolic links from this test
+        if not stat.S_ISLNK(pathstat.st_mode) and bool(pathstat.st_mode & stat.S_IWOTH):
             return False
         else:
             return True
