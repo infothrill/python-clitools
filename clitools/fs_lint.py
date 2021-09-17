@@ -303,6 +303,7 @@ class TestNameUpperCaseExtension(TestBase):
     def fix(self, path, pathstat):
         """Fix upper case extension."""
         new_path = path.with_name(path.stem + path.suffix.lower())
+        logger.debug('renaming "%s" to "%s"', path, new_path)
         os.rename(path, new_path)
 
 
@@ -365,6 +366,7 @@ class TestNameControlChars(TestBase):
     def fix(self, path, pathstat):
         """Fix name by removing control chars from name."""
         new_path = path.with_name(''.join(ch for ch in path.name if unicodedata.category(ch)[0] != 'C'))
+        logger.debug('renaming "%s" to "%s"', path, new_path)
         os.rename(path, new_path)
 
 
@@ -376,7 +378,7 @@ class TestNameSpaceAtStart(TestBase):
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        self._regex = re.compile(r'^\s+(.*)$')  # spaces at start
+        self._regex = re.compile(r'^ +(.*)$')  # spaces at start
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -385,12 +387,64 @@ class TestNameSpaceAtStart(TestBase):
         else:
             return True
 
-    def experimentalfix(self, path, pathstat):
+    def fix(self, path, pathstat):
         """Remove space(s) at beginning of name."""
         result = self._regex.match(path.name)
         if result:
             new_path = path.with_name(result.group(1))
-            # click.echo(new_path)
+            logger.debug('renaming "%s" to "%s"', path, new_path)
+            os.rename(path, new_path)
+
+
+@linterdex.register
+class TestNameSpaceAtEnd(TestBase):
+    """Test if filename ends with one or more spaces."""
+
+    name = 'name-spaceatend'
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        self._regex = re.compile(r'^(.*?) +$')  # spaces at end
+
+    def _test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if self._regex.match(path.name):
+            return False
+        else:
+            return True
+
+    def fix(self, path, pathstat):
+        """Remove space(s) at end of name."""
+        result = self._regex.match(path.name)
+        if result:
+            new_path = path.with_name(result.group(1))
+            logger.debug('renaming "%s" to "%s"', path, new_path)
+            os.rename(path, new_path)
+
+
+@linterdex.register
+class TestNameSpaceDouble(TestBase):
+    """Test if filename has two or more adjacent spaces in the name."""
+
+    name = 'name-spacedouble'
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        self._regex = re.compile('  +')  # 2 or more adjacent spaces
+
+    def _test(self, path, pathstat):
+        """Run the test on path and stat object."""
+        if self._regex.search(path.name):
+            return False
+        else:
+            return True
+
+    def fix(self, path, pathstat):
+        """Replace adjacent space(s) with single space."""
+        result = self._regex.sub(' ', path.name)
+        if result:
+            new_path = path.with_name(result)
+            logger.debug('renaming "%s" to "%s"', path, new_path)
             os.rename(path, new_path)
 
 
@@ -403,13 +457,11 @@ class TestNameDangerous(TestBase):
     def __init__(self):  # noqa: D107
         super().__init__()
         expressions = [
-            r'.*\s+',  # spaces at end
-            r'.*\s\s+.*',  # 2 or more adjacent spaces
-            r'-.*',  # - at start of name
-            r'.*\s-.*',  # - after space in name
+            r'^-.*',  # - at start of name
+            r'.* -.*',  # - after space in name
         ]
         # TODO: test for shell meta characters?
-        self._regex = re.compile(r'^(%s)$' % '|'.join(expressions))
+        self._regex = re.compile(r'(%s)' % '|'.join(expressions))
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
@@ -421,8 +473,9 @@ class TestNameDangerous(TestBase):
     def experimentalfix(self, path, pathstat):
         """Fix dangerous names."""
         # definitely bogus implementation for now
-        new_path = path.with_name(path.stem.strip().replace(' -', '-').replace('  ', ' ') + path.suffix)
+        new_path = path.with_name(path.stem.strip().replace(' -', '-') + path.suffix)
         click.echo(new_path)
+        logger.debug('renaming "%s" to "%s"', path, new_path)
         # os.rename(path, new_path)
 
 
@@ -432,9 +485,14 @@ class TestSizeZero(TestBase):
 
     name = 'size-zero'
 
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        # well known filenames that are 0 bytes by design
+        self._ok = ('__init__.py')
+
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if pathstat.st_size == 0:
+        if pathstat.st_size == 0 and path.name not in self._ok:
             return False
         else:
             return True

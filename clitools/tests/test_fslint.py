@@ -48,7 +48,7 @@ def test_fs(testfilesystem):
         ]
         )
     assert 'FAIL' in result.output
-    assert 38 == len(result.output.splitlines())
+    assert 40 == len(result.output.splitlines())
     assert 1 == result.exit_code
 
 
@@ -117,9 +117,9 @@ def test_TestPermsWorldReadableDir(tmp_path):
     test_path.rmdir()
 
 
-def test_TestPermsOrphanExecutableBit(tmp_path):
-    """Test for TestPermissionsOrphanExecutableBit."""
-    testcases = [
+@pytest.mark.parametrize(
+    'name, perms, shouldpass',
+    [
         ('orphanex', 0o661, False),
         ('orphanex', 0o616, False),
         ('orphanex', 0o166, False),
@@ -133,27 +133,28 @@ def test_TestPermsOrphanExecutableBit(tmp_path):
         ('noex', 0o464, True),
         ('noex', 0o446, True),
     ]
+)
+def test_TestPermsOrphanExecutableBit(tmp_path, name, perms, shouldpass):
+    """Test for TestPermissionsOrphanExecutableBit."""
     # setup test case
-    for name, perms, shouldpass in testcases:
-        # setup test case
-        test_path = Path(tmp_path / name)
-        test_path.touch()
-        test_path.chmod(perms)
+    test_path = Path(tmp_path / name)
+    test_path.touch()
+    test_path.chmod(perms)
 
-        # run test case
-        test = fs_lint.TestPermissionsOrphanExecutableBit()
-        assert test(test_path, test_path.lstat()) is shouldpass
-        # TODO: fix
-        # test.fix(test_path, test_path.lstat())
-        # assert test(test_path, test_path.lstat()) is True
+    # run test case
+    test = fs_lint.TestPermissionsOrphanExecutableBit()
+    assert test(test_path, test_path.lstat()) is shouldpass
+    # TODO: fix
+    # test.fix(test_path, test_path.lstat())
+    # assert test(test_path, test_path.lstat()) is True
 
-        # cleanup
-        test_path.unlink()
+    # cleanup
+    test_path.unlink()
 
 
-def test_TestNameSpaceAtStart(tmp_path):
-    """Test for TestNameSpaceAtStart."""
-    testcases = [
+@pytest.mark.parametrize(
+    'bad, fixed, shouldpass',
+    [
         ('testfile', 'testfile', True),
         ('test file', 'test file', True),
         ('testfile ', 'testfile ', True),
@@ -162,53 +163,122 @@ def test_TestNameSpaceAtStart(tmp_path):
         ('   testfile', 'testfile', False),
         ('   test file', 'test file', False),
     ]
-    for bad, fixed, shouldpass in testcases:
-        # setup test case
-        test_path = Path(tmp_path / bad)
-        fixed_path = Path(tmp_path / fixed)
-        test_path.touch()
+)
+def test_TestNameSpaceAtStart(tmp_path, bad, fixed, shouldpass):
+    """Test for TestNameSpaceAtStart."""
+    # setup test case
+    test_path = Path(tmp_path / bad)
+    fixed_path = Path(tmp_path / fixed)
+    test_path.touch()
 
-        # run test case
-        test = fs_lint.TestNameSpaceAtStart()
-        assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
+    # run test case
+    test = fs_lint.TestNameSpaceAtStart()
+    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
 
-        test.experimentalfix(test_path, test_path.lstat())
-        assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
-        assert fixed_path.exists(), 'Assert new file after rename exists'
-        assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
+    test.fix(test_path, test_path.lstat())
+    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
+    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
-        # cleanup
-        if test_path.exists():
-            test_path.unlink()
-        if fixed_path.exists():
-            fixed_path.unlink()
+    # cleanup
+    test_path.unlink(missing_ok=True)
+    fixed_path.unlink(missing_ok=True)
 
 
-def test_TestNameControlChars(tmp_path):
-    """Test for TestNameControlChars."""
-    testcases = [
+@pytest.mark.parametrize(
+    'bad, fixed, shouldpass',
+    [
+        ('testfile', 'testfile', True),
+        ('test file', 'test file', True),
+        (' testfile', ' testfile', True),
+        ('testfile ', 'testfile', False),
+        ('testfile  ', 'testfile', False),
+        ('testfile   ', 'testfile', False),
+        ('test file   ', 'test file', False),
+    ]
+)
+def test_TestNameSpaceAtEnd(tmp_path, bad, fixed, shouldpass):
+    """Test for TestNameSpaceAtEnd."""
+    # setup test case
+    test_path = Path(tmp_path / bad)
+    fixed_path = Path(tmp_path / fixed)
+    test_path.touch()
+
+    # run test case
+    test = fs_lint.TestNameSpaceAtEnd()
+    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion for "{0}"'.format(test_path)
+
+    test.fix(test_path, test_path.lstat())
+    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
+    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
+
+    # cleanup
+    test_path.unlink(missing_ok=True)
+    fixed_path.unlink(missing_ok=True)
+
+
+@pytest.mark.parametrize(
+    'bad, fixed, shouldpass',
+    [
+        ('testfile', 'testfile', True),
+        ('test file', 'test file', True),
+        (' testfile', ' testfile', True),
+        ('testfile ', 'testfile ', True),
+        ('testfile  ', 'testfile ', False),
+        ('testfile   ', 'testfile ', False),
+        ('test file   ', 'test file ', False),
+        ('test  file   ', 'test file ', False),
+        ('  test  file   ', ' test file ', False),
+        ('test      file', 'test file', False),
+    ]
+)
+def test_TestNameSpaceDouble(tmp_path, bad, fixed, shouldpass):
+    """Test for TestNameSpaceDouble."""
+    # setup test case
+    test_path = Path(tmp_path / bad)
+    fixed_path = Path(tmp_path / fixed)
+    test_path.touch()
+
+    # run test case
+    test = fs_lint.TestNameSpaceDouble()
+    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion for "{0}"'.format(test_path)
+
+    test.fix(test_path, test_path.lstat())
+    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
+    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
+
+    # cleanup
+    test_path.unlink(missing_ok=True)
+    fixed_path.unlink(missing_ok=True)
+
+
+@pytest.mark.parametrize(
+    'bad, fixed, shouldpass',
+    [
         ('testfile', 'testfile', True),
         ('test file', 'test file', True),
         ('test\tfile', 'testfile', False),
         ('testfile\x08', 'testfile', False),
     ]
-    for bad, fixed, shouldpass in testcases:
-        # setup test case
-        test_path = Path(tmp_path / bad)
-        fixed_path = Path(tmp_path / fixed)
-        test_path.touch()
+)
+def test_TestNameControlChars(tmp_path, bad, fixed, shouldpass):
+    """Test for TestNameControlChars."""
+    # setup test case
+    test_path = Path(tmp_path / bad)
+    fixed_path = Path(tmp_path / fixed)
+    test_path.touch()
 
-        # run test case
-        test = fs_lint.TestNameControlChars()
-        assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
+    # run test case
+    test = fs_lint.TestNameControlChars()
+    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
 
-        test.fix(test_path, test_path.lstat())
-        assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
-        assert fixed_path.exists(), 'Assert new file after rename exists'
-        assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
+    test.fix(test_path, test_path.lstat())
+    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
+    assert fixed_path.exists(), 'Assert new file after rename exists'
+    assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
-        # cleanup
-        if test_path.exists():
-            test_path.unlink()
-        if fixed_path.exists():
-            fixed_path.unlink()
+    # cleanup
+    test_path.unlink(missing_ok=True)
+    fixed_path.unlink(missing_ok=True)
