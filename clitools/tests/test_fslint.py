@@ -181,8 +181,10 @@ def test_TestNameSpaceAtStart(tmp_path, bad, fixed, shouldpass):
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
-    test_path.unlink(missing_ok=True)
-    fixed_path.unlink(missing_ok=True)
+    if test_path.exists():
+        test_path.unlink()
+    if fixed_path.exists():
+        fixed_path.unlink()
 
 
 @pytest.mark.parametrize(
@@ -214,8 +216,10 @@ def test_TestNameSpaceAtEnd(tmp_path, bad, fixed, shouldpass):
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
-    test_path.unlink(missing_ok=True)
-    fixed_path.unlink(missing_ok=True)
+    if test_path.exists():
+        test_path.unlink()
+    if fixed_path.exists():
+        fixed_path.unlink()
 
 
 @pytest.mark.parametrize(
@@ -250,8 +254,10 @@ def test_TestNameSpaceDouble(tmp_path, bad, fixed, shouldpass):
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
-    test_path.unlink(missing_ok=True)
-    fixed_path.unlink(missing_ok=True)
+    if test_path.exists():
+        test_path.unlink()
+    if fixed_path.exists():
+        fixed_path.unlink()
 
 
 @pytest.mark.parametrize(
@@ -280,5 +286,7 @@ def test_TestNameControlChars(tmp_path, bad, fixed, shouldpass):
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
-    test_path.unlink(missing_ok=True)
-    fixed_path.unlink(missing_ok=True)
+    if test_path.exists():
+        test_path.unlink()
+    if fixed_path.exists():
+        fixed_path.unlink()
