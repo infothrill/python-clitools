@@ -488,14 +488,24 @@ class TestSizeZero(TestBase):
     def __init__(self):  # noqa: D107
         super().__init__()
         # well known filenames that are 0 bytes by design
-        self._ok = ('__init__.py')
+        self._allow_list = ('__init__.py', 'LOCK')
+        self._allow_regex = re.compile(r'(?i).*\.lock|.*\.log|.*\.db-wal|.*\.sqlitedb-wal|.*\.sqlite-wal')
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if pathstat.st_size == 0 and path.name not in self._ok:
+        def allow_name(name):
+            if name in self._allow_list:
+                return True
+            if self._allow_regex.match(name):
+                return True
             return False
-        else:
-            return True
+        if pathstat.st_size == 0:
+            # sockets are allowed to be 0 bytes:
+            if stat.S_ISSOCK(pathstat.st_mode):
+                return True
+            if not allow_name(path.name):
+                return False
+        return True
 
 
 @linterdex.register
@@ -608,13 +618,23 @@ class TestNameNonAscii(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        a, b = path.name, unidecode(path.name)
-        if a != b:
+        if path.name != unidecode(path.name):
             # click.echo(colorize_differences_inline(a, b))
             # click.echo("%s -> %s" % (colorize_differences(a, b)))
             return False
         else:
             return True
+
+    def experimentalfix(self, path, pathstat):
+        """Attempt to transliterate non-ascii name to an ascii name."""
+        from unidecode import unidecode
+        newname = unidecode(path.name)
+        if newname != path.name:
+            newname = newname.replace('/', '_')  # unicode forward slash allowed, but not ascii!
+            new_path = path.with_name(newname)
+            logger.debug('renaming "%s" to "%s"', path, new_path)
+            click.echo('renaming "%s" to "%s"' % (click.format_filename(path), new_path))
+            # os.rename(path, new_path)
 
 
 class FSLinter():
@@ -661,7 +681,7 @@ class FSLinter():
                 color=self._color
             )
             # https://click.palletsprojects.com/en/8.0.x/utils/#printing-filenames
-            click.echo(click.format_filename(path))
+            click.echo(click.format_filename(str(path)))
             if self._fix:
                 for failure in failures:
                     if callable(getattr(failure, 'fix', None)):

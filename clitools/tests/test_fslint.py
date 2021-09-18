@@ -48,7 +48,7 @@ def test_fs(testfilesystem):
         ]
         )
     assert 'FAIL' in result.output
-    assert 40 == len(result.output.splitlines())
+    assert 42 == len(result.output.splitlines())
     assert 1 == result.exit_code
 
 
