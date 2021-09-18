@@ -502,8 +502,8 @@ class TestSizeZero(TestBase):
                 return True
             return False
         if pathstat.st_size == 0:
-            # sockets are allowed to be 0 bytes:
-            if stat.S_ISSOCK(pathstat.st_mode):
+            # character devices, sockets are allowed to be 0 bytes:
+            if stat.S_ISSOCK(pathstat.st_mode) or stat.S_ISCHR(pathstat.st_mode):
                 return True
             if not allow_name(path.name):
                 return False
