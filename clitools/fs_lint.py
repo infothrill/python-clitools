@@ -14,6 +14,7 @@ import subprocess  # noqa: S404
 import logging
 import difflib
 import unicodedata
+from itertools import chain
 
 from unidecode import unidecode
 from class_registry import ClassRegistry, ClassRegistryInstanceCache
@@ -636,7 +637,7 @@ class TestNameNonAscii(TestBase):
             new_path = path.with_name(newname)
             logger.debug('renaming "%s" to "%s"', path, new_path)
             click.echo('renaming "%s" to "%s"' % (click.format_filename(path), new_path))
-            # os.rename(path, new_path)
+            os.rename(path, new_path)
 
 
 class FSLinter():
@@ -750,7 +751,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.option('-l', '--limit', multiple=True, help='Limit to given tests.')
 @click.option('--list-tests', is_flag=True, default=False)
 @click.option('-s', '--skip-test', multiple=True)
-@click.option('--statistics', is_flag=True, default=False)
+@click.option('--statistics', '--stats', is_flag=True, default=False)
 @click.option('--fix', is_flag=True, default=False)
 @click.option('--color', default='auto', type=click.Choice(['auto', 'never', 'always'], case_sensitive=False))
 @click.option(
@@ -771,6 +772,12 @@ def fs_lint(
     skip_vcs_ignore, statistics, fix, experimental, color
 ):
     """Find paths that fail tests."""
+    # cli input validation
+    for t in chain(skip_test, limit):
+        if t not in linterdex.keys():
+            click.echo('Invalid test "%s" specified. Abort.' % t)
+            sys.exit(1)
+    # end cli input validation
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
     linter.set_verbose(verbose)
