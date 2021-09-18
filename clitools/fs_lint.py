@@ -184,7 +184,9 @@ class TestPermissionsWorldReadableDir(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if path.is_dir() and (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH)):
+        # skip symlinks
+        if not stat.S_ISLNK(pathstat.st_mode) and path.is_dir() and \
+                (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH)):
             return False
         else:
             return True
