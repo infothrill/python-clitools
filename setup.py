@@ -31,6 +31,7 @@ setup(
         'phx-class-registry >= 3.0.5',  # fs-lint
         'pathspec>=0.5.9',  # fs-lint
         'six',
+        'python-gitlab',  # gitlab_shared_runners
         'python-slugify>=3.0.3',  # fs-lint
         # the cli tool autocropscans depends on this to be in the PYTHONPATH,
         # since it is not packaged fully, it cannot be automatically be installed
@@ -42,6 +43,7 @@ setup(
             'detectencoding = clitools.detectencoding:main',
             'digssh = clitools.digssh:main',
             'fs-lint = clitools.fs_lint:fs_lint',
+            'gitlab-shared-runners = clitools.gitlab_shared_runners:main',
             'id3v1toid3v2 = clitools.id3v1toid3v2:main',
             'autocropscans = clitools.autocropscans:main',
             'onlinepingcheck = clitools.onlinepingcheck:main',
