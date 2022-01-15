@@ -33,7 +33,7 @@ def group_projects_shared_runners(gl, grp, enabled=False):
     else:
         grp.shared_runners_setting = 'disabled_and_unoverridable'
     grp.save()
-    for prj in grp.projects.list():
+    for prj in grp.projects.list(as_list=False):  # use generator due to pagination
         thisprj = gl.projects.get(prj.id, lazy=False)
         if thisprj.shared_runners_enabled != enabled:
             click.echo('{0}/{1}: {2} -> {3}'.format(grp.name, thisprj.name, thisprj.shared_runners_enabled, enabled))
