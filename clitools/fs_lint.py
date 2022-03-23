@@ -646,6 +646,7 @@ class FSLinter():
     def __init__(self):  # noqa: D107
         self.tests = []
         self._verbose = True
+        self._quiet = False
         self._fix = False
         self._experimental = False
         self._color = True
@@ -657,6 +658,10 @@ class FSLinter():
     def set_verbose(self, verbose):
         """Set the verbosity."""
         self._verbose = verbose
+
+    def set_quiet(self, quiet):
+        """Set the quiet option."""
+        self._quiet = quiet
 
     def set_fix(self, fix):
         """Set the 'fix' option."""
@@ -676,15 +681,16 @@ class FSLinter():
         st = path.lstat()
         failures = [test for test in self.tests if not test(path, st)]
         if failures:
-            click.secho(
-                'FAIL[%s]:' % ','.join(sorted(test.name for test in failures)),
-                nl=False,
-                fg='red',
-                bold=False,
-                color=self._color
-            )
-            # https://click.palletsprojects.com/en/8.0.x/utils/#printing-filenames
-            click.echo(click.format_filename(str(path)))
+            if not self._quiet:
+                click.secho(
+                    'FAIL[%s]:' % ','.join(sorted(test.name for test in failures)),
+                    nl=False,
+                    fg='red',
+                    bold=False,
+                    color=self._color
+                )
+                # https://click.palletsprojects.com/en/8.0.x/utils/#printing-filenames
+                click.echo(click.format_filename(str(path)))
             if self._fix:
                 for failure in failures:
                     if callable(getattr(failure, 'fix', None)):
@@ -766,10 +772,11 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
     default=False,
     help='Ignore VCS ignore files.'
 )
+@click.option('-q', '--quiet', is_flag=True, default=False)
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
 def fs_lint(
     paths, skip_test, limit, list_tests, exclude, verbose, debug, hidden,
-    skip_vcs_ignore, statistics, fix, experimental, color
+    skip_vcs_ignore, statistics, fix, experimental, color, quiet
 ):
     """Find paths that fail tests."""
     # cli input validation
@@ -781,6 +788,7 @@ def fs_lint(
     filetests = ClassRegistryInstanceCache(linterdex)
     linter = FSLinter()
     linter.set_verbose(verbose)
+    linter.set_quiet(quiet)
     linter.set_fix(fix)
     linter.set_experimental(experimental)
     if color.lower() == 'never':  # color: {auto,always,never}
