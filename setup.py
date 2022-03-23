@@ -33,6 +33,7 @@ setup(
         'six',
         'python-gitlab',  # gitlab_shared_runners
         'python-slugify>=3.0.3',  # fs-lint
+        'pyfzf>=0.3.1',  # note
         # the cli tool autocropscans depends on this to be in the PYTHONPATH,
         # since it is not packaged fully, it cannot be automatically be installed
         # https://github.com/msaavedra/autocrop
@@ -46,6 +47,7 @@ setup(
             'gitlab-shared-runners = clitools.gitlab_shared_runners:main',
             'id3v1toid3v2 = clitools.id3v1toid3v2:main',
             'autocropscans = clitools.autocropscans:main',
+            'note = clitools.note:main',
             'onlinepingcheck = clitools.onlinepingcheck:main',
             'rdiff-backup-wrapper = clitools.rdiff_backup_wrapper:main',
             'rndpasswd = clitools.rndpasswd:main',
