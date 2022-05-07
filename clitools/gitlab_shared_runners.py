@@ -63,7 +63,7 @@ def main(enable, gitlab_token, gitlab_url, private_group_name):
     # click.echo(mygrp.name)
     group_projects_shared_runners(gl, mygrp, enabled=enable)
 
-    runners = mygrp.runners.list()
+    runners = mygrp.runners.list(all=True)
     for runner in runners:
         therunner = gl.runners.get(runner.id)
         for _grp in therunner.groups:
