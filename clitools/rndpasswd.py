@@ -3,8 +3,8 @@
 
 """Generate a random password.
 
-This uses pwgen if available, otherwises uses
-urandom to generate a password itself.
+This uses pwgen if available, otherwises uses the
+secrets module to generate a password.
 """
 
 from __future__ import print_function
@@ -12,7 +12,7 @@ from __future__ import absolute_import
 
 import sys
 import os
-from os import urandom
+from secrets import token_bytes
 from itertools import islice, repeat
 import subprocess  # noqa: S404
 
@@ -64,7 +64,7 @@ def rand_string(length=32, exclude=None):
     def urandomascii(size):
         strval = None
         while strval is None:
-            value = urandom(size)
+            value = token_bytes(size)
             try:
                 strval = value.decode('ascii')
             except UnicodeDecodeError:
