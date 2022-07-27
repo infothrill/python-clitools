@@ -25,7 +25,7 @@ def main():
             if match is not None:
                 aliases = [x.strip() for x in match.group('aliases').split(' ')]
                 if arg in aliases:
-                    print(match.group('hostname'))  # noqa: T001
+                    print(match.group('hostname'))  # noqa: T201
             else:
                 continue
     return 0

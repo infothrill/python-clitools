@@ -102,9 +102,9 @@ def pwgen(length=32, exclude=None):
 def main(length, remove_chars):
     """Generate a secure password."""
     if which('pwgen'):
-        print(pwgen(length, remove_chars))  # noqa: T001
+        print(pwgen(length, remove_chars))  # noqa: T201
     else:
-        print(rand_string(length, remove_chars))  # noqa: T001
+        print(rand_string(length, remove_chars))  # noqa: T201
     return 0
 
 

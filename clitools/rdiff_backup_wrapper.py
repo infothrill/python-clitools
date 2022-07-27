@@ -273,7 +273,7 @@ def version_check():
     major = int(major)
     minor = int(minor)
     if (major <= 2 and minor < 4):
-        print('this script requires Python version 2.4 or newer. Sorry!')  # noqa: T001
+        print('this script requires Python version 2.4 or newer. Sorry!')  # noqa: T201
         sys.exit(256)
 
 

@@ -38,13 +38,13 @@ def convert_id3v1_to_id3v2(path):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
-        print('Error: non-zero exit code: %i' % proc.returncode)  # noqa: T001
+        print('Error: non-zero exit code: %i' % proc.returncode)  # noqa: T201
         if len(stdout):
-            print(stdout)  # noqa: T001
+            print(stdout)  # noqa: T201
         if len(stderr):
-            print(stderr)  # noqa: T001
+            print(stderr)  # noqa: T201
     if stderr.find('Tags could not be converted') > -1:
-        print('Error: %s' % (stdout + stderr))  # noqa: T001
+        print('Error: %s' % (stdout + stderr))  # noqa: T201
     return proc.returncode
 
 
@@ -84,15 +84,15 @@ def main():
             for relpath in files:
                 abspath = os.path.join(root, relpath)
                 if args.verbose:
-                    print(abspath)  # noqa: T001
+                    print(abspath)  # noqa: T201
                 id3version = get_id3_versions(abspath)
                 if id3version:
                     if 1 in id3version and 2 not in id3version:
                         if not args.verbose:
-                            print(abspath)  # noqa: T001
+                            print(abspath)  # noqa: T201
                         if not args.dryrun:
                             convert_id3v1_to_id3v2(abspath)
-                            print('%r -> %r' % (id3version, get_id3_versions(abspath)))  # noqa: T001
+                            print('%r -> %r' % (id3version, get_id3_versions(abspath)))  # noqa: T201
 
 
 if __name__ == '__main__':

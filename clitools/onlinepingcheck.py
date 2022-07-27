@@ -129,9 +129,9 @@ def online_check():
 def main():
     """Run main program."""
     if online_check():
-        print('online')  # noqa: T001
+        print('online')  # noqa: T201
         return 0
-    print('offline')  # noqa: T001
+    print('offline')  # noqa: T201
     return 1
 
 
