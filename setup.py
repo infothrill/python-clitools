@@ -3,9 +3,10 @@
 
 """Setup the package."""
 
-from setuptools import setup, find_packages
-
 import sys
+
+from setuptools import find_packages, setup
+
 if sys.version_info < (3, 7):
     sys.exit('Sorry, Python < 3.7 is not supported')
 

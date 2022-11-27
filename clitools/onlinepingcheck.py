@@ -5,14 +5,13 @@
 # supports python27+ with IPy
 # starting with python3.4 no additional dependencies
 
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-from itertools import chain
 import platform
-from random import randint
-import sys
 import subprocess  # noqa: S404
+import sys
+from itertools import chain
+from random import randint
 
 if sys.version_info < (3, 4):
     import IPy

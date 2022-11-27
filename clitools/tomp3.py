@@ -4,14 +4,13 @@
 
 # apt-get install python-tagpy lame
 
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-import sys
 import os
 import subprocess  # noqa: S404
-import click
+import sys
 
+import click
 
 # def do_single_process(file_list):
 #     for file in file_list:

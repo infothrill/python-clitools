@@ -2,26 +2,25 @@
 
 """Detect issues with files (permissions, ownership, naming)."""
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
-import os
-import sys
-import stat
-import re
-from pathlib import Path
-import subprocess  # noqa: S404
-import logging
 import difflib
+import logging
+import os
+import re
+import stat
+import subprocess  # noqa: S404
+import sys
 import unicodedata
 from itertools import chain
+from pathlib import Path
 
-from unidecode import unidecode
-from class_registry import ClassRegistry, ClassRegistryInstanceCache
 import click
 import pathspec
-from slugify import slugify
+from class_registry import ClassRegistry, ClassRegistryInstanceCache
 from colorama import Fore, Style
+from slugify import slugify
+from unidecode import unidecode
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

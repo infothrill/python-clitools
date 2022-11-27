@@ -47,12 +47,13 @@ presented and the contents of that file will be shown. The input will be used
 as a suffix for the created filename.
 """
 
-import os
-from io import StringIO
 import datetime
-import tempfile
 import logging
+import os
 import shutil
+import tempfile
+from io import StringIO
+
 import click
 
 
@@ -91,9 +92,8 @@ def names():
 def note():
     """Run note program."""
     basepath = os.getcwd()
-    NOTES_PATH = basepath
-    if not os.path.isdir(NOTES_PATH):
-        raise RuntimeError('{0} is not a directory'.format(NOTES_PATH))
+    if not os.path.isdir(basepath):
+        raise RuntimeError('{0} is not a directory'.format(basepath))
 
     result = fzf(sorted(names()))
     if len(result) == 0:
@@ -102,7 +102,7 @@ def note():
     if not os.path.isdir(option):
         raise RuntimeError('{0} is not a directory'.format(option))
 
-    targetpath = os.path.join(NOTES_PATH, option)
+    targetpath = os.path.join(basepath, option)
     if not os.path.isdir(targetpath):
         raise RuntimeError('{0} is not a directory'.format(targetpath))
 
@@ -126,7 +126,7 @@ def note():
             shutil.copyfile(_tpl_path, targetfname)
         else:
             # try parent directory
-            _tpl_path = os.path.join(NOTES_PATH, '__template__.md')
+            _tpl_path = os.path.join(basepath, '__template__.md')
             if os.path.exists(_tpl_path):
                 shutil.copyfile(_tpl_path, targetfname)
     runvi(targetfname)

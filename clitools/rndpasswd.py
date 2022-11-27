@@ -7,14 +7,13 @@ This uses pwgen if available, otherwises uses the
 secrets module to generate a password.
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-import sys
 import os
-from secrets import token_bytes
-from itertools import islice, repeat
 import subprocess  # noqa: S404
+import sys
+from itertools import islice, repeat
+from secrets import token_bytes
 
 import click
 

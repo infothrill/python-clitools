@@ -3,9 +3,9 @@
 
 """Script to convert id3 v1 tags in a mp3 file to id3 v2."""
 
-import sys
 import os
 import subprocess  # noqa: S404, B404 nosec
+import sys
 
 # requires tool "id3v2"
 

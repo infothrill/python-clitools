@@ -5,12 +5,11 @@
 Extremely naive and broken parser implementation using lots of assumptions and
 bad regexes. Works for me.
 """
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os.path
-import sys
 import re
+import sys
 
 
 def main():

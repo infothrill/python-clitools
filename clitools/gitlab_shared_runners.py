@@ -21,9 +21,9 @@ https://about.gitlab.com/pricing/faq-consumption-cicd/
 """
 
 import sys
-import gitlab
 
 import click
+import gitlab
 
 
 def group_projects_shared_runners(gl, grp, enabled=False):

@@ -27,36 +27,36 @@ dircheck = local_path, optional
 
 """
 
+import logging
 import os
 import sys
-from ConfigParser import SafeConfigParser
 from optparse import OptionParser
-import logging
 
+from ConfigParser import SafeConfigParser
 
 author = """Paul Kremer, 2007"""
-license = 'MIT'
-__configObject = None  # holder for a Config object
+license = 'MIT'  # noqa: A001
+__config_object__ = None  # holder for a Config object
 
 
 def get_config(configfile=None):
     """Return an instance of ConfigParser."""
-    global __configObject
+    global __config_object__
     from os import path
-    if __configObject is None:
+    if __config_object__ is None:
         if configfile is not None:
             cfgfile = configfile
         else:
             cfgfile = path.join(get_app_home_path(), 'config.ini')
-        __configObject = SafeConfigParser()
-        __configObject.read(cfgfile)
-    return __configObject
+        __config_object__ = SafeConfigParser()
+        __config_object__.read(cfgfile)
+    return __config_object__
 
 
 def is_mac_osx():
     """Determine if we're running on macOS."""
-    import re
     import platform
+    import re
     darwin = re.compile('Darwin')
     if darwin.match(platform.system()):
         return True
@@ -66,7 +66,7 @@ def is_mac_osx():
 
 def get_app_home_path():
     """Return the application's config directory."""
-    from os import environ, path, mkdir
+    from os import environ, mkdir, path
     home = environ['HOME']
     if is_mac_osx():
         homepath = path.join(home, 'Library', 'Application Support', 'rdiff-backup-wrapper')
@@ -79,7 +79,7 @@ def get_app_home_path():
 
 def get_app_log_path():
     """Return the application log directory."""
-    from os import environ, path, mkdir
+    from os import environ, mkdir, path
     if is_mac_osx():
         home = environ['HOME']
         logpath = path.join(home, 'Library', 'Logs', 'rdiff-backup-wrapper')
@@ -201,15 +201,15 @@ def do_backup_with_options(copt, dopt):
     cmdlineoptions.insert(0, 'rdiff-backup')
     logging.info('%s ---> %s', dopt['source'], dopt['destination'])
     # do run!
-    backupRunResult = run_proc(cmdlineoptions)
+    backuprunresult = run_proc(cmdlineoptions)
     # if successfull:
-    if backupRunResult is True:
+    if backuprunresult is True:
         if len(additional_run) > 0:
             additional_run.append(dopt['destination'])
             additional_run.insert(0, 'rdiff-backup')
             logging.info('Cleanup: %s', ' '.join(additional_run))
-            backupRunResult = run_proc(additional_run)
-    return backupRunResult
+            backuprunresult = run_proc(additional_run)
+    return backuprunresult
 
 
 def pass_ping_check(setoptions):
@@ -255,15 +255,15 @@ def setup_logging(verbosity=1, logfile='main.log', logcount=62):
         logging.getLogger().addHandler(console)
 
     if logfile == os.devnull:
-        fileH = logging.FileHandler(os.devnull)
+        fileh = logging.FileHandler(os.devnull)
     else:
-        fileH = handlers.RotatingFileHandler(os.path.join(get_app_log_path(), logfile), backupCount=logcount)
-        fileH.doRollover()  # rotate logfiles straight off!
+        fileh = handlers.RotatingFileHandler(os.path.join(get_app_log_path(), logfile), backupCount=logcount)
+        fileh.doRollover()  # rotate logfiles straight off!
 
-    fileH.setLevel(logging.INFO)
-    formatterFile = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-    fileH.setFormatter(formatterFile)
-    logging.getLogger().addHandler(fileH)
+    fileh.setLevel(logging.INFO)
+    formatterfile = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+    fileh.setFormatter(formatterfile)
+    logging.getLogger().addHandler(fileh)
 
 
 def version_check():

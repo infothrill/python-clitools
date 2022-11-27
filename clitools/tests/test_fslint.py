@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Tests for the cli interface."""
 
-import pytest
-import shutil
 import os
+import shutil
 import stat
 import tarfile
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from clitools import fs_lint
@@ -66,7 +66,7 @@ def test_empty_run():
     assert 0 == result.exit_code
 
 
-def test_TestPermissionsWorldWritable(tmp_path):
+def test_testpermissionsworldwritable(tmp_path):
     """Test for TestPermissionsWorldWritable."""
     # setup test case
     test_path = tmp_path / 'testfile'
@@ -83,7 +83,7 @@ def test_TestPermissionsWorldWritable(tmp_path):
     test_path.unlink()
 
 
-def test_TestPermsWorldReadable(tmp_path):
+def test_testpermsworldreadable(tmp_path):
     """Test for TestPermissionsWorldReadable."""
     # setup test case
     test_path = tmp_path / 'testfile'
@@ -100,7 +100,7 @@ def test_TestPermsWorldReadable(tmp_path):
     test_path.unlink()
 
 
-def test_TestPermsWorldReadableDir(tmp_path):
+def test_testpermsworldreadabledir(tmp_path):
     """Test for TestPermissionsWorldReadableDir."""
     # setup test case
     test_path = tmp_path / 'testdir'
@@ -134,7 +134,7 @@ def test_TestPermsWorldReadableDir(tmp_path):
         ('noex', 0o446, True),
     ]
 )
-def test_TestPermsOrphanExecutableBit(tmp_path, name, perms, shouldpass):
+def test_testpermsorphanexecutablebit(tmp_path, name, perms, shouldpass):
     """Test for TestPermissionsOrphanExecutableBit."""
     # setup test case
     test_path = Path(tmp_path / name)
@@ -164,7 +164,7 @@ def test_TestPermsOrphanExecutableBit(tmp_path, name, perms, shouldpass):
         ('   test file', 'test file', False),
     ]
 )
-def test_TestNameSpaceAtStart(tmp_path, bad, fixed, shouldpass):
+def test_testnamespaceatstart(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceAtStart."""
     # setup test case
     test_path = Path(tmp_path / bad)
@@ -199,7 +199,7 @@ def test_TestNameSpaceAtStart(tmp_path, bad, fixed, shouldpass):
         ('test file   ', 'test file', False),
     ]
 )
-def test_TestNameSpaceAtEnd(tmp_path, bad, fixed, shouldpass):
+def test_testnamespaceatend(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceAtEnd."""
     # setup test case
     test_path = Path(tmp_path / bad)
@@ -237,7 +237,7 @@ def test_TestNameSpaceAtEnd(tmp_path, bad, fixed, shouldpass):
         ('test      file', 'test file', False),
     ]
 )
-def test_TestNameSpaceDouble(tmp_path, bad, fixed, shouldpass):
+def test_testnamespacedouble(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceDouble."""
     # setup test case
     test_path = Path(tmp_path / bad)
@@ -269,7 +269,7 @@ def test_TestNameSpaceDouble(tmp_path, bad, fixed, shouldpass):
         ('testfile\x08', 'testfile', False),
     ]
 )
-def test_TestNameControlChars(tmp_path, bad, fixed, shouldpass):
+def test_testnamecontrolchars(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameControlChars."""
     # setup test case
     test_path = Path(tmp_path / bad)

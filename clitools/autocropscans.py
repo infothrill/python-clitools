@@ -3,14 +3,13 @@
 
 """Dirty hack to script scanning and cropping old photos."""
 
-import os
 import fnmatch
+import os
 from pathlib import Path
 
 import click
+from autocrop import Background, MultiPartImage
 from PIL import Image
-
-from autocrop import MultiPartImage, Background
 
 
 def store_as_jpg(photo, directory, basename, optimize=True, quality=85):
@@ -51,13 +50,13 @@ def main(paths):
     blank_img = Image.open(blank)
     background = Background().load_from_image(blank_img, dpi=600)
 
-    FNMATCH = ('SCAN_*.png', '*.tif')
+    fnmatchpatterns = ('SCAN_*.png', '*.tif')
     infiles = []
     for fname in sorted(os.listdir(scan_path)):
         absname = os.path.join(scan_path, fname)
         if not os.path.isfile(absname):
             continue
-        for fn in FNMATCH:
+        for fn in fnmatchpatterns:
             if fnmatch.fnmatch(fname, fn):
                 infiles.append(fname)
                 continue
