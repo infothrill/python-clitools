@@ -1,14 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Setup the package."""
 
 import sys
 
 from setuptools import find_packages, setup
-
-if sys.version_info < (3, 7):
-    sys.exit('Sorry, Python < 3.7 is not supported')
 
 setup(
     name='clitools',
@@ -29,7 +25,7 @@ setup(
         'IPy >= 0.83',  # onlinepingheck
         'unidecode >= 0.04',  # transliterate
         'mutagen >= 1.39',  # mp3 tags
-        'phx-class-registry >= 3.0.5',  # fs-lint
+        'phx-class-registry >= 5.0',  # fs-lint
         'pathspec>=0.5.9',  # fs-lint
         'six',
         'python-gitlab',  # gitlab_shared_runners

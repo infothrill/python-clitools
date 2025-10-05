@@ -14,7 +14,8 @@ from pathlib import Path
 
 import click
 import pathspec
-from class_registry import ClassRegistry, ClassRegistryInstanceCache
+from class_registry import ClassRegistry
+from class_registry.cache import ClassRegistryInstanceCache
 from colorama import Fore, Style
 from slugify import slugify
 from unidecode import unidecode
