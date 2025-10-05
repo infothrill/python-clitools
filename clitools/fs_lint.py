@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """Detect issues with files (permissions, ownership, naming)."""
 
-from __future__ import absolute_import, print_function
 
 import difflib
 import logging
@@ -635,7 +632,7 @@ class TestNameNonAscii(TestBase):
             newname = newname.replace('/', '_')  # unicode forward slash allowed, but not ascii!
             new_path = path.with_name(newname)
             logger.debug('renaming "%s" to "%s"', path, new_path)
-            click.echo('renaming "%s" to "%s"' % (click.format_filename(path), new_path))
+            click.echo(f'renaming "{click.format_filename(path)}" to "{new_path}"')
             os.rename(path, new_path)
 
 
@@ -713,7 +710,7 @@ def readlines(fname):
     :param fname: filename
     """
     try:
-        with open(fname, 'r') as fh:
+        with open(fname) as fh:
             return tuple(fh.read().splitlines())
     except OSError:
         return ()
