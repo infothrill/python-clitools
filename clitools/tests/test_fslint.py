@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tests for the cli interface."""
 
 import os
@@ -27,7 +26,7 @@ def testfilesystem(tmp_path, request):
     tarball = os.path.join(request.fspath.dirname, 'resources', 'test-fs.tgz')
     os.chdir(tmp_path)
     tar = tarfile.open(tarball)
-    tar.extractall()
+    tar.extractall()  # noqa: S202
     tar.close()
     yield tmp_path / 'test-fs'
     shutil.rmtree(tmp_path / 'test-fs')
@@ -176,8 +175,8 @@ def test_testnamespaceatstart(tmp_path, bad, fixed, shouldpass):
     assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
 
     test.fix(test_path, test_path.lstat())
-    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
-    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert shouldpass is test_path.exists(), f'Assert original file {test_path} was renamed according to expectation'
+    assert fixed_path.exists(), f'Assert new file after rename exists "{test_path}"->"{fixed_path}"'
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
@@ -208,11 +207,11 @@ def test_testnamespaceatend(tmp_path, bad, fixed, shouldpass):
 
     # run test case
     test = fs_lint.TestNameSpaceAtEnd()
-    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion for "{0}"'.format(test_path)
+    assert test(test_path, test_path.lstat()) is shouldpass, f'Test should pass assertion for "{test_path}"'
 
     test.fix(test_path, test_path.lstat())
-    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
-    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert shouldpass is test_path.exists(), f'Assert original file {test_path} was renamed according to expectation'
+    assert fixed_path.exists(), f'Assert new file after rename exists "{test_path}"->"{fixed_path}"'
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
@@ -246,11 +245,11 @@ def test_testnamespacedouble(tmp_path, bad, fixed, shouldpass):
 
     # run test case
     test = fs_lint.TestNameSpaceDouble()
-    assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion for "{0}"'.format(test_path)
+    assert test(test_path, test_path.lstat()) is shouldpass, f'Test should pass assertion for "{test_path}"'
 
     test.fix(test_path, test_path.lstat())
-    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
-    assert fixed_path.exists(), 'Assert new file after rename exists "{0}"->"{1}"'.format(test_path, fixed_path)
+    assert shouldpass is test_path.exists(), f'Assert original file {test_path} was renamed according to expectation'
+    assert fixed_path.exists(), f'Assert new file after rename exists "{test_path}"->"{fixed_path}"'
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
     # cleanup
@@ -281,7 +280,7 @@ def test_testnamecontrolchars(tmp_path, bad, fixed, shouldpass):
     assert test(test_path, test_path.lstat()) is shouldpass, 'Test should pass assertion'
 
     test.fix(test_path, test_path.lstat())
-    assert shouldpass is test_path.exists(), 'Assert original file {0} was renamed according to expectation'.format(test_path)
+    assert shouldpass is test_path.exists(), f'Assert original file {test_path} was renamed according to expectation'
     assert fixed_path.exists(), 'Assert new file after rename exists'
     assert test(fixed_path, fixed_path.lstat()) is True, 'Fixed file should pass test'
 
