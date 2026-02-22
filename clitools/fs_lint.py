@@ -449,34 +449,33 @@ class TestNameSpaceDouble(TestBase):
 
 
 @linterdex.register
-class TestNameDangerous(TestBase):
-    """Test if file has a dangerous name, in particular with regards to commands."""
+class TestNameShell(TestBase):
+    """Test for shell metacharacters."""
 
-    name = 'name-dangerous'
+    name = 'name-shell'
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        expressions = [
-            r'^-.*',  # - at start of name
-            r'.* -.*',  # - after space in name
-        ]
-        # TODO: test for shell meta characters?
-        self._regex = re.compile(r'(%s)' % '|'.join(expressions))
+        # Practical list of common shell metacharacters:
+        # Redirects: < > |
+        # Execution: ; & ( ) ` $
+        # Wildcards: * ? [ ]
+        # Quotes/Whitespace: ' " \s
+        # Others: \ # ~ { }
+        self.META_PATTERN = r"[\s><|;&()`$*?\[\]'\"\\#~{}]"
 
     def _test(self, path, pathstat):
-        """Run the test on path and stat object."""
-        if self._regex.match(path.name):
-            return False
-        else:
-            return True
+        """Returns False if the path name contains any shell metacharacters."""
+        return not bool(re.search(self.META_PATTERN, path.name))
 
     def experimentalfix(self, path, pathstat):
-        """Fix dangerous names."""
-        # definitely bogus implementation for now
-        new_path = path.with_name(path.stem.strip().replace(' -', '-') + path.suffix)
-        click.echo(new_path)
+        """Attempt to rename the file to a name with metacharacters stripped."""
+        new_name = re.sub(self.META_PATTERN, "_", path.name)
+
+        new_path = path.with_name(new_name)
         logger.debug('renaming "%s" to "%s"', path, new_path)
-        # os.rename(path, new_path)
+        path.rename(new_path)
+        click.secho(f"renamed to {new_name}", fg="green")
 
 
 @linterdex.register
@@ -845,3 +844,7 @@ def fs_lint(
                 click.secho('%i' % test.total, fg='green', bold=False, color=color)
     if any(test.count_failed() > 0 for test in linter.tests):
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    fs_lint()

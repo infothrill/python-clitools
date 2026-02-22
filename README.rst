@@ -23,4 +23,4 @@ or, with pipx:
 
 Requirements
 ------------
-Python3.6+
+Python3.10+
