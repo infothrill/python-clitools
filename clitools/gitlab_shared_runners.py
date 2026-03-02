@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """Script to enable or disable gitlab shared runners and pause/un-pause private runners.
 
@@ -33,43 +32,35 @@ def group_projects_shared_runners(gl, grp, enabled=False):
     else:
         grp.shared_runners_setting = 'disabled_and_unoverridable'
     grp.save()
-    for prj in grp.projects.list(as_list=False):  # use generator due to pagination
+    for prj in grp.projects.list(get_all=False, iterator=True):  # use generator due to pagination
         thisprj = gl.projects.get(prj.id, lazy=False)
         if thisprj.shared_runners_enabled != enabled:
-            click.echo('{0}/{1}: {2} -> {3}'.format(grp.name, thisprj.name, thisprj.shared_runners_enabled, enabled))
+            click.echo(f'{grp.name}/{thisprj.name}: {thisprj.shared_runners_enabled} -> {enabled}')
             thisprj.shared_runners_enabled = enabled
             thisprj.save()
         else:
-            click.echo('{0}/{1}: {2}'.format(grp.name, thisprj.name, thisprj.shared_runners_enabled))
+            click.echo(f'{grp.name}/{thisprj.name}: {thisprj.shared_runners_enabled}')
 
 
 @click.command()
 @click.option('--enable/--disable', default=True)
 @click.option('--gitlab-token', envvar='GITLAB_TOKEN', type=click.STRING, required=True)
 @click.option('--gitlab-url', envvar='GITLAB_URL', default='https://gitlab.com', type=click.STRING, required=True)
-@click.option('--private_group_name', default=None, type=click.STRING, required=True)
-def main(enable, gitlab_token, gitlab_url, private_group_name):
+@click.option('--private_group_id', default=None, type=click.STRING, required=True)
+def main(enable, gitlab_token, gitlab_url, private_group_id):
     """Enable or disable GitLab shared runners."""
     gl = gitlab.Gitlab(gitlab_url, private_token=gitlab_token)
 
-    my_private_group = None
-    for _grp in gl.groups.list():
-        if _grp.name == private_group_name:
-            my_private_group = _grp
-    if my_private_group is None:
-        raise Exception('{0} not found'.format(private_group_name))
-
-    mygrp = gl.groups.get(my_private_group.id)
-    # click.echo(mygrp.name)
+    mygrp = gl.groups.get(private_group_id)
     group_projects_shared_runners(gl, mygrp, enabled=enable)
 
     runners = mygrp.runners.list(all=True)
     for runner in runners:
         therunner = gl.runners.get(runner.id)
         for _grp in therunner.groups:
-            if _grp['id'] == my_private_group.id:
+            if _grp['id'] == private_group_id:
                 if therunner.active is not (not enable):
-                    click.echo('runner: {0}/{1}: {2} -> {3}'.format(
+                    click.echo('runner: {}/{}: {} -> {}'.format(
                         _grp['name'],
                         therunner.description,
                         therunner.active,
@@ -78,7 +69,7 @@ def main(enable, gitlab_token, gitlab_url, private_group_name):
                     therunner.active = not enable
                     therunner.save()
                 else:
-                    click.echo('runner: {0}/{1}: {2}'.format(
+                    click.echo('runner: {}/{}: {}'.format(
                         _grp['name'],
                         therunner.description,
                         therunner.active
