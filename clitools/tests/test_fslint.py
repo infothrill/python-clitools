@@ -26,7 +26,7 @@ def testfilesystem(tmp_path, request):
     tarball = os.path.join(request.fspath.dirname, 'resources', 'test-fs.tgz')
     os.chdir(tmp_path)
     tar = tarfile.open(tarball)
-    tar.extractall()  # noqa: S202
+    tar.extractall(filter='fully_trusted')  # noqa: S202
     tar.close()
     yield tmp_path / 'test-fs'
     shutil.rmtree(tmp_path / 'test-fs')
@@ -48,7 +48,7 @@ def test_fs(testfilesystem):
         )
     assert 'FAIL' in result.output
     # print(result.output)
-    assert 1 == result.exit_code
+    assert result.exit_code == 1
     assert len(result.output.splitlines()) > 0
 
 
@@ -57,13 +57,13 @@ def test_empty_run():
     runner = CliRunner()
     result = runner.invoke(fs_lint.fs_lint)
     assert 'Usage' in result.output
-    assert 1 == result.exit_code
+    assert result.exit_code == 1
     result = runner.invoke(fs_lint.fs_lint, ['--help'])
     assert 'Usage' in result.output
-    assert 0 == result.exit_code
+    assert result.exit_code == 0
     result = runner.invoke(fs_lint.fs_lint, ['--list-tests'])
     assert 'Test if' in result.output
-    assert 0 == result.exit_code
+    assert result.exit_code == 0
 
 
 def test_testpermissionsworldwritable(tmp_path):

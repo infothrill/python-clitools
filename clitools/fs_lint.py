@@ -140,10 +140,7 @@ class TestPermissionsSuid(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if bool(pathstat.st_mode & stat.S_ISUID):
-            return False
-        else:
-            return True
+        return not bool(pathstat.st_mode & stat.S_ISUID)
 
 
 @linterdex.register
@@ -168,10 +165,7 @@ class TestPermissionsSgid(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if bool(pathstat.st_mode & stat.S_ISGID):
-            return False
-        else:
-            return True
+        return not bool(pathstat.st_mode & stat.S_ISGID)
 
 
 @linterdex.register
@@ -210,10 +204,7 @@ class TestPermissionsOwner(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if pathstat.st_uid != self._uid:
-            return False
-        else:
-            return True
+        return pathstat.st_uid == self._uid
 
 
 @linterdex.register
@@ -228,10 +219,7 @@ class TestPermissionsGroup(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if pathstat.st_gid != self._gid:
-            return False
-        else:
-            return True
+        return pathstat.st_gid == self._gid
 
 
 @linterdex.register
@@ -341,10 +329,7 @@ class TestNameTempfile(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if not stat.S_ISDIR(pathstat.st_mode) and self._regex.match(path.name):
-            return False
-        else:
-            return True
+        return not (not stat.S_ISDIR(pathstat.st_mode) and self._regex.match(path.name))
 
 
 @linterdex.register
@@ -358,10 +343,7 @@ class TestNameControlChars(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if any(unicodedata.category(char)[0] == 'C' for char in path.name):
-            return False
-        else:
-            return True
+        return not any(unicodedata.category(char)[0] == 'C' for char in path.name)
 
     def fix(self, path, pathstat):
         """Fix name by removing control chars from name."""
@@ -382,10 +364,7 @@ class TestNameSpaceAtStart(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if self._regex.match(path.name):
-            return False
-        else:
-            return True
+        return not self._regex.match(path.name)
 
     def fix(self, path, pathstat):
         """Remove space(s) at beginning of name."""
@@ -408,10 +387,7 @@ class TestNameSpaceAtEnd(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if self._regex.match(path.name):
-            return False
-        else:
-            return True
+        return not self._regex.match(path.name)
 
     def fix(self, path, pathstat):
         """Remove space(s) at end of name."""
@@ -434,10 +410,7 @@ class TestNameSpaceDouble(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if self._regex.search(path.name):
-            return False
-        else:
-            return True
+        return not self._regex.search(path.name)
 
     def fix(self, path, pathstat):
         """Replace adjacent space(s) with single space."""
@@ -449,10 +422,10 @@ class TestNameSpaceDouble(TestBase):
 
 
 @linterdex.register
-class TestNameShell(TestBase):
+class TestNameShellStrict(TestBase):
     """Test for shell metacharacters."""
 
-    name = 'name-shell'
+    name = 'name-shell-strict'
 
     def __init__(self):  # noqa: D107
         super().__init__()
@@ -463,6 +436,36 @@ class TestNameShell(TestBase):
         # Quotes/Whitespace: ' " \s
         # Others: \ # ~ { }
         self.META_PATTERN = r"[\s><|;&()`$*?\[\]'\"\\#~{}]"
+
+    def _test(self, path, pathstat):
+        """Returns False if the path name contains any shell metacharacters."""
+        return not bool(re.search(self.META_PATTERN, path.name))
+
+    def experimentalfix(self, path, pathstat):
+        """Attempt to rename the file to a name with metacharacters stripped."""
+        new_name = re.sub(self.META_PATTERN, "_", path.name)
+
+        new_path = path.with_name(new_name)
+        logger.debug('renaming "%s" to "%s"', path, new_path)
+        path.rename(new_path)
+        click.secho(f"renamed to {new_name}", fg="green")
+
+
+@linterdex.register
+class TestNameShellLax(TestBase):
+    """Test for shell metacharacters."""
+
+    name = 'name-shell-lax'
+
+    def __init__(self):  # noqa: D107
+        super().__init__()
+        # Practical list of common shell metacharacters:
+        # Redirects: < > |
+        # Execution: ` $
+        # Wildcards: * ?
+        # Quotes: "
+        # Others: \
+        self.META_PATTERN = r"[><|`$*?\"\\]"
 
     def _test(self, path, pathstat):
         """Returns False if the path name contains any shell metacharacters."""
@@ -520,10 +523,7 @@ class TestNameLength32(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if len(path.name) > 32:
-            return False
-        else:
-            return True
+        return len(path.name) <= 32
 
     def experimentalfix(self, path, pathstat):
         """Attempt to rename the file to a shorter variant."""
@@ -619,7 +619,7 @@ class TestNameNonAscii(TestBase):
         """Run the test on path and stat object."""
         if path.name != unidecode(path.name):
             # click.echo(colorize_differences_inline(a, b))
-            # click.echo("%s -> %s" % (colorize_differences(a, b)))
+            click.echo("%s -> %s" % (colorize_differences(path.name, unidecode(path.name))))
             return False
         else:
             return True
@@ -723,11 +723,9 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
             for root, dirs, files in os.walk(start_path):
                 if not skip_vcs_ignore and '.gitignore' in files:
                     logger.debug('.gitignore found')
-                    local_ignore_spec = pathspec.PathSpec(
-                        map(
-                            pathspec.patterns.GitWildMatchPattern,
-                            exclude + readlines(os.path.join(root, '.gitignore'))
-                        )
+                    local_ignore_spec = pathspec.PathSpec.from_lines(
+                        'gitignore',
+                        exclude + readlines(os.path.join(root, '.gitignore'))
                     )
                 else:
                     local_ignore_spec = ignore_spec
@@ -820,7 +818,7 @@ def fs_lint(
             exclude += readlines(gitexcludes)
     if not hidden:
         exclude = ('.*',) + exclude  # assume .* matches most often and takes precedence
-    ignore_spec = pathspec.PathSpec(map(pathspec.patterns.GitWildMatchPattern, exclude))
+    ignore_spec = pathspec.PathSpec.from_lines('gitignore', exclude)
 
     for available_test in linterdex.keys():
         if limit:
