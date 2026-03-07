@@ -11,7 +11,7 @@ Installation
 
 .. code-block:: bash
 
-   python setup.py install
+   pip install .
 
 or, with pipx:
 
