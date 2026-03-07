@@ -18,9 +18,8 @@ def main():
         return 1
     for fname in args:
         with open(fname, 'rb') as f:
-            charencoding = chardet.detect(f.read())
-            sys.stdout.write('{}:{} (confidence {})\n'.format(fname, charencoding['encoding'],
-                                                          int(charencoding['confidence'] * 100)))
+            c = chardet.detect(f.read())  # noqa F841
+            sys.stdout.write("{fname}:{c['encoding']} (confidence {c['confidence']})\n")
     return 0
 
 

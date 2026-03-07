@@ -438,17 +438,17 @@ class TestNameShellStrict(TestBase):
         self.META_PATTERN = r"[\s><|;&()`$*?\[\]'\"\\#~{}]"
 
     def _test(self, path, pathstat):
-        """Returns False if the path name contains any shell metacharacters."""
+        """Return False if the path name contains any shell metacharacters."""
         return not bool(re.search(self.META_PATTERN, path.name))
 
     def experimentalfix(self, path, pathstat):
         """Attempt to rename the file to a name with metacharacters stripped."""
-        new_name = re.sub(self.META_PATTERN, "_", path.name)
+        new_name = re.sub(self.META_PATTERN, '_', path.name)
 
         new_path = path.with_name(new_name)
         logger.debug('renaming "%s" to "%s"', path, new_path)
         path.rename(new_path)
-        click.secho(f"renamed to {new_name}", fg="green")
+        click.secho(f'renamed to {new_name}', fg='green')
 
 
 @linterdex.register
@@ -465,20 +465,20 @@ class TestNameShellLax(TestBase):
         # Wildcards: * ?
         # Quotes: "
         # Others: \
-        self.META_PATTERN = r"[><|`$*?\"\\]"
+        self.META_PATTERN = r'[><|`$*?"\\]'
 
     def _test(self, path, pathstat):
-        """Returns False if the path name contains any shell metacharacters."""
+        """Return False if the path name contains any shell metacharacters."""
         return not bool(re.search(self.META_PATTERN, path.name))
 
     def experimentalfix(self, path, pathstat):
         """Attempt to rename the file to a name with metacharacters stripped."""
-        new_name = re.sub(self.META_PATTERN, "_", path.name)
+        new_name = re.sub(self.META_PATTERN, '_', path.name)
 
         new_path = path.with_name(new_name)
         logger.debug('renaming "%s" to "%s"', path, new_path)
         path.rename(new_path)
-        click.secho(f"renamed to {new_name}", fg="green")
+        click.secho(f'renamed to {new_name}', fg='green')
 
 
 @linterdex.register
@@ -619,7 +619,7 @@ class TestNameNonAscii(TestBase):
         """Run the test on path and stat object."""
         if path.name != unidecode(path.name):
             # click.echo(colorize_differences_inline(a, b))
-            click.echo("%s -> %s" % (colorize_differences(path.name, unidecode(path.name))))
+            click.echo('%s -> %s' % (colorize_differences(path.name, unidecode(path.name))))
             return False
         else:
             return True

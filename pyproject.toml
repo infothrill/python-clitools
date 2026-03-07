@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clitools"
-version = "0.2.1"
+version = "0.2.2"
 authors = [{name = "Paul Kremer"}]
 description = "Collection of CLI tools written in Python"
 license = {text = "MIT"}
@@ -69,16 +69,19 @@ ignore = "W504"
 exclude = ".git,__pycache__,.tox,dist,build,.eggs,.direnv,.venv"
 per-file-ignores = """
 clitools/tests/*.py:S101,E501"""
+inline-quotes = "single"
 
 [tool.coverage.run]
 omit = ["clitools/tests/*"]
 
 [tool.check-manifest]
-ignore = """
-.coveragerc
-.pre-commit-config.yaml
-.pylintrc
-.github
-.renovaterc.json
-tox.ini
-requirements-dev.txt"""
+ignore = [
+".coveragerc",
+".pre-commit-config.yaml",
+".pylintrc",
+".github",
+".renovaterc.json",
+".venv",
+".tox",
+"tox.ini",
+"requirements-dev.txt"]
