@@ -93,4 +93,5 @@ ignore = [
 ".venv",
 ".tox",
 "tox.ini",
+"uv.lock",
 "requirements-dev.txt"]
