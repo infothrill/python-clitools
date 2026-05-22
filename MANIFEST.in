@@ -1,4 +1,4 @@
-include *.rst
+include *.md
 include LICENSE
 recursive-include clitools *.py
 recursive-include clitools/tests/resources *
