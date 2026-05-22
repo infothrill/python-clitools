@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Dirty wrapper around rdiff-backup.
 
@@ -29,10 +28,14 @@ dircheck = local_path, optional
 
 import logging
 import os
+import re
 import sys
 from optparse import OptionParser
 
-from ConfigParser import SafeConfigParser
+try:
+    from configparser import ConfigParser as SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
 
 author = """Paul Kremer, 2007"""
 license = 'MIT'  # noqa: A001
@@ -43,11 +46,9 @@ def get_config(configfile=None):
     """Return an instance of ConfigParser."""
     global __config_object__
     from os import path
+
     if __config_object__ is None:
-        if configfile is not None:
-            cfgfile = configfile
-        else:
-            cfgfile = path.join(get_app_home_path(), 'config.ini')
+        cfgfile = configfile if configfile is not None else path.join(get_app_home_path(), 'config.ini')
         __config_object__ = SafeConfigParser()
         __config_object__.read(cfgfile)
     return __config_object__
@@ -57,16 +58,15 @@ def is_mac_osx():
     """Determine if we're running on macOS."""
     import platform
     import re
+
     darwin = re.compile('Darwin')
-    if darwin.match(platform.system()):
-        return True
-    else:
-        return False
+    return bool(darwin.match(platform.system()))
 
 
 def get_app_home_path():
     """Return the application's config directory."""
     from os import environ, mkdir, path
+
     home = environ['HOME']
     if is_mac_osx():
         homepath = path.join(home, 'Library', 'Application Support', 'rdiff-backup-wrapper')
@@ -80,6 +80,7 @@ def get_app_home_path():
 def get_app_log_path():
     """Return the application log directory."""
     from os import environ, mkdir, path
+
     if is_mac_osx():
         home = environ['HOME']
         logpath = path.join(home, 'Library', 'Logs', 'rdiff-backup-wrapper')
@@ -93,50 +94,58 @@ def get_app_log_path():
 def run_proc(args=None, quiet=False):
     """Run specified external command."""
     import subprocess  # noqa: S404
+
     if args is None:
         raise NameError('args must be set to run a program!')
     logging.debug('executing %s', ' '.join(args))
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
-    res = proc.wait()
-    if not res == 0 and quiet is False:
+    stdout, stderr = proc.communicate()
+    # stdout/stderr are bytes; decode to text
+    try:
+        stdout_text = stdout.decode('utf-8') if stdout is not None else ''
+    except Exception:
+        stdout_text = str(stdout)
+    try:
+        stderr_text = stderr.decode('utf-8') if stderr is not None else ''
+    except Exception:
+        stderr_text = str(stderr)
+    res = proc.returncode
+    if res != 0 and quiet is False:
         logging.error('error while executing %s', ' '.join(args))
         logging.error('Non-zero exit code: %s', res)
         logging.error('STDOUT is:')
-        for line in proc.stdout.readlines():
-            logging.error(line.rstrip('\n'))
+        for line in stdout_text.splitlines():
+            logging.error(line)
         logging.error('STDERR is:')
-        for line in proc.stderr.readlines():
-            logging.error(line.rstrip('\n'))
+        for line in stderr_text.splitlines():
+            logging.error(line)
     else:
         if not quiet:
-            for line in proc.stdout.readlines():
-                logging.info(line.rstrip('\n'))
-    if res == 0:
-        return True
-    else:
-        return False
+            for line in stdout_text.splitlines():
+                logging.info(line)
+    return res == 0
 
 
 def get_common_config_values(cfg):
     """Return config values from the common section."""
-    from string import strip
+    # use str.strip to trim whitespace from set names
 
-    common_options = {'sets': None}
+    common_options = {'sets': []}
     required_common_options = {'sets': None}
     # make sure required options are set by simply trying to get() them:
     for c in required_common_options:
         cfg.get('common', c)
 
     sets_str = cfg.get('common', 'sets')
-    setnames = map(strip, sets_str.split(','), ' ')
+    setnames = [s.strip() for s in sets_str.split(',')]
     common_options['sets'] = setnames
     return common_options
 
 
 def get_set_config_values(cfg, setname, common_options):
     """Return config values for the given set."""
-    import re
-    set_options = {'name': None, 'source': None, 'destination': None}
+    # annotate as a generic mapping so static type checkers accept varied value types
+    set_options: dict = {'name': None, 'source': None, 'destination': None}
     # make sure required options are set by simply trying to get() them:
     for c in set_options:
         set_options[c] = cfg.get(setname, c, False, common_options)
@@ -144,13 +153,16 @@ def get_set_config_values(cfg, setname, common_options):
     excludeoptionmatch = re.compile('^--exclude.*')
     for c in cfg.options(setname):
         set_options[c] = cfg.get(setname, c, False, common_options)
-        set_options[c] = set_options[c].split(os.linesep)  # multi-line options
+        # ensure we have a string before splitting (cfg.get may return None/False)
+        val = set_options[c]
+        val = '' if (val is None or val is False) else str(val)
+        set_options[c] = val.split(os.linesep)  # multi-line options
 
         # remove double slashes from filenames:
         if excludeoptionmatch.match(c):
             for i in range(len(set_options[c])):
                 set_options[c][i] = os.path.expanduser(set_options[c][i])
-                while not set_options[c][i].find(os.sep + os.sep) == -1:
+                while set_options[c][i].find(os.sep + os.sep) != -1:
                     set_options[c][i] = set_options[c][i].replace(os.sep + os.sep, os.sep)
         if len(set_options[c]) == 1:
             set_options[c] = set_options[c][0]
@@ -174,7 +186,7 @@ def ping_host(host):
 def do_backup_with_options(copt, dopt):
     """Perform backup given options."""
     import re
-    from types import ListType
+
     m = re.compile(r'^\-\-.*')
     additional_run_options = ['--remove-older-than']
     additional_run = []
@@ -187,7 +199,7 @@ def do_backup_with_options(copt, dopt):
             elif k in forbidden_options:
                 pass
             else:
-                if type(dopt[k]) is ListType:
+                if isinstance(dopt[k], list):
                     # print "FOUND LIST"
                     for val in dopt[k]:
                         cmdlineoptions.append(k)
@@ -202,13 +214,12 @@ def do_backup_with_options(copt, dopt):
     logging.info('%s ---> %s', dopt['source'], dopt['destination'])
     # do run!
     backuprunresult = run_proc(cmdlineoptions)
-    # if successfull:
-    if backuprunresult is True:
-        if len(additional_run) > 0:
-            additional_run.append(dopt['destination'])
-            additional_run.insert(0, 'rdiff-backup')
-            logging.info('Cleanup: %s', ' '.join(additional_run))
-            backuprunresult = run_proc(additional_run)
+    # if successful and there are additional run options, do cleanup
+    if backuprunresult is True and len(additional_run) > 0:
+        additional_run.append(dopt['destination'])
+        additional_run.insert(0, 'rdiff-backup')
+        logging.info('Cleanup: %s', ' '.join(additional_run))
+        backuprunresult = run_proc(additional_run)
     return backuprunresult
 
 
@@ -223,7 +234,7 @@ def pass_ping_check(setoptions):
 
 def pass_dir_check(setoptions):
     """Based on options, pass or don't pass the dir check."""
-    if ('dircheck' in setoptions and os.path.exists((setoptions['dircheck']))) or ('dircheck' not in setoptions):
+    if ('dircheck' in setoptions and os.path.exists(setoptions['dircheck'])) or ('dircheck' not in setoptions):
         return True
     else:
         logging.warn("error: directory '%s' does not exist" % setoptions['dircheck'])
@@ -233,6 +244,7 @@ def pass_dir_check(setoptions):
 def setup_logging(verbosity=1, logfile='main.log', logcount=62):
     """Configure python logging."""
     from logging import handlers
+
     if logfile is None:
         logfile = 'main.log'
     if logcount is None:
@@ -269,10 +281,11 @@ def setup_logging(verbosity=1, logfile='main.log', logcount=62):
 def version_check():
     """Fail if python version is too old."""
     import platform
+
     (major, minor, dummypatchlevel) = platform.python_version_tuple()
     major = int(major)
     minor = int(minor)
-    if (major <= 2 and minor < 4):
+    if major <= 2 and minor < 4:
         print('this script requires Python version 2.4 or newer. Sorry!')  # noqa: T201
         sys.exit(256)
 
@@ -292,19 +305,13 @@ def main():
     if options.verbose is True:
         verbosity = 2
 
-    if len(options.configfile) > 0:
-        cfg = get_config(options.configfile)
-    else:
-        cfg = get_config()
+    cfg = get_config(options.configfile) if len(options.configfile) > 0 else get_config()
 
-    thelogfile = None
+    thelogfile = ''
     if cfg.has_option('common', 'logfile'):
-        thelogfile = cfg.get('common', 'logfile')
+        thelogfile = cfg.get('common', 'logfile') or ''
 
-    if cfg.has_option('common', 'logcount'):
-        logcount = cfg.getint('common', 'logcount')
-    else:
-        logcount = None
+    logcount = cfg.getint('common', 'logcount') if cfg.has_option('common', 'logcount') else 0
 
     setup_logging(verbosity=verbosity, logfile=thelogfile, logcount=logcount)
 

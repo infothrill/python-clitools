@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """Script to convert id3 v1 tags in a mp3 file to id3 v2."""
 
@@ -33,7 +32,7 @@ import sys
 def convert_id3v1_to_id3v2(path):
     """Convert idv3 tags from v1 to v2 using cli tool id3v2."""
     if not os.path.isfile(path):
-        raise ValueError('Not a path: {0}'.format(path))
+        raise ValueError(f'Not a path: {path}')
     cmd = ['id3v2', '-C', path]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
@@ -49,13 +48,12 @@ def convert_id3v1_to_id3v2(path):
 
 
 def get_id3_versions(path):
-    """
-    Return an array containing 1,2 or nothing.
+    """Return an array containing 1,2 or nothing.
 
     :param path: path to mp3
     """
     if not os.path.isfile(path):
-        raise ValueError('Not a path: {0}'.format(path))
+        raise ValueError(f'Not a path: {path}')
     cmd = ['id3v2', '-l', path]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     buf, _err = proc.communicate()
@@ -70,13 +68,13 @@ def get_id3_versions(path):
 def main():
     """Run main program."""
     import argparse
+
     parser = argparse.ArgumentParser(description='Convert id3v1 tags to id3v2 tags.')
-    parser.add_argument('paths', metavar='PATH', type=str, nargs='+',
-                        help='path to music files')
-    parser.add_argument('--dry-run', dest='dryrun', action='store_true',
-                        default=False, help='only show affected files')
-    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
-                        default=False, help='list files being inspected')
+    parser.add_argument('paths', metavar='PATH', type=str, nargs='+', help='path to music files')
+    parser.add_argument('--dry-run', dest='dryrun', action='store_true', default=False, help='only show affected files')
+    parser.add_argument(
+        '-v', '--verbose', dest='verbose', action='store_true', default=False, help='list files being inspected'
+    )
     args = parser.parse_args()
 
     for start_path in args.paths:
@@ -86,13 +84,12 @@ def main():
                 if args.verbose:
                     print(abspath)  # noqa: T201
                 id3version = get_id3_versions(abspath)
-                if id3version:
-                    if 1 in id3version and 2 not in id3version:
-                        if not args.verbose:
-                            print(abspath)  # noqa: T201
-                        if not args.dryrun:
-                            convert_id3v1_to_id3v2(abspath)
-                            print('%r -> %r' % (id3version, get_id3_versions(abspath)))  # noqa: T201
+                if id3version and 1 in id3version and 2 not in id3version:
+                    if not args.verbose:
+                        print(abspath)  # noqa: T201
+                    if not args.dryrun:
+                        convert_id3v1_to_id3v2(abspath)
+                        print(f'{id3version!r} -> {get_id3_versions(abspath)!r}')  # noqa: T201
 
 
 if __name__ == '__main__':

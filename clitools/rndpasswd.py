@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Generate a random password.
 
 This uses pwgen if available, otherwises uses the
 secrets module to generate a password.
 """
-
-from __future__ import absolute_import, print_function
 
 import os
 import subprocess  # noqa: S404
@@ -19,11 +16,11 @@ import click
 
 
 def which(program):
-    """
-    Find executable in PATH just like the unix utility `which`.
+    """Find executable in PATH just like the unix utility `which`.
 
     :param program: string path
     """
+
     def is_exe(fpath):
         """Determine wether file at given path is executable."""
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -42,16 +39,12 @@ def which(program):
 
 
 def rand_string(length=32, exclude=None):
-    """
-    Generate and return a random string.
+    """Generate and return a random string.
 
     :param length: int length of string to generate
     :param exclude: string characters to exclude
     """
-    if exclude is None:
-        exclude = set()
-    else:
-        exclude = set(exclude)
+    exclude = set() if exclude is None else set(exclude)
     # remove lowercase L and uppercase o to avoid confusion with DIGITS
     lower_case = 'abcdefghijkmnopqrstuvwxyz'
     upper_case = 'ABCDEFGHIJKLMNPQRSTUVWXYZ'
@@ -76,22 +69,18 @@ def rand_string(length=32, exclude=None):
 
 
 def pwgen(length=32, exclude=None):
-    """
-    Run commdand line tool `pwgen` to generate a password.
+    """Run commdand line tool `pwgen` to generate a password.
 
     :param length: int length of string to generate
     :param exclude: string characters to exclude
     """
     # pwgen -sBy -r "\`'\"" 32 1
-    if exclude is None:
-        exclude = r"\`'\""
-    else:
-        exclude = r"\`'\"" + exclude
+    exclude = r"\`'\"" if exclude is None else r"\`'\"" + exclude
     cmd = ['pwgen', '-sBy', '-r', exclude, '%s' % length, '1']
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # noqa: S603
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
-        raise Exception('pwgen: %s %s' % (stdout, stderr))
+        raise Exception(f'pwgen: {stdout} {stderr}')
     return stdout.strip().decode('ascii')
 
 

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-u"""Rename filesystem entries to ASCII equivalent transliterations.
+"""Rename filesystem entries to ASCII equivalent transliterations.
 
 Example:
 $ ls -l
@@ -14,30 +12,25 @@ $ transliterate -v --dry-run .
 # fix the encoding of the filenames, try:
 # http://manpages.ubuntu.com/manpages/xenial/man1/convmv.1.html
 
-from __future__ import absolute_import
-
 import os
 import sys
 
 import click
-import six
 from unidecode import unidecode
 
 
 def decode_filesystem_name(value):
-    """
-    Return unicode representation of filesystem entry.
+    """Return unicode representation of filesystem entry.
 
     :param value: byte or unicode string
     """
-    if isinstance(value, six.binary_type):
+    if isinstance(value, bytes):
         value = value.decode(sys.getfilesystemencoding())
     return value
 
 
 def transrename(path, verbose=False, dry_run=False):
-    """
-    Rename an individual file or directory to an ASCII transliterated variant.
+    """Rename an individual file or directory to an ASCII transliterated variant.
 
     :param path: absolute path
     :param verbose: bool
@@ -50,7 +43,7 @@ def transrename(path, verbose=False, dry_run=False):
         newbasename = newbasename.replace('/', '_')  # unicode forward slash allowed, but not ascii!
         newabspath = os.path.join(dirname, newbasename)
         if verbose:
-            click.echo('%s -> %s' % (path, newbasename))
+            click.echo(f'{path} -> {newbasename}')
         if not dry_run:
             os.rename(path, newabspath)
 

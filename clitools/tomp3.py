@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-
 """Command line script to batch convert audio files to mp3."""
 
 # apt-get install python-tagpy lame
-
-from __future__ import absolute_import, print_function
 
 import os
 import subprocess  # noqa: S404
@@ -40,18 +36,17 @@ import click
 
 
 def get_flac_tags_mutagen(path):
-    """
-    Return media tags of specified audio file.
+    """Return media tags of specified audio file.
 
     :param path: path
     """
     from mutagen.flac import FLAC
+
     return dict(FLAC(path).tags)
 
 
 def convert_wave_to_mp3(path, dest):
-    """
-    Convert wave file to mp3 using 'lame'.
+    """Convert wave file to mp3 using 'lame'.
 
     :param path: path
     """
@@ -73,8 +68,7 @@ def convert_wave_to_mp3(path, dest):
 
 
 def convert_flac_to_mp3(path, dest):
-    r"""
-    Convert given flac file to mp3.
+    r"""Convert given flac file to mp3.
 
     flac -c -d "$a" | lame --add-id3v2 --pad-id3v2-size 256 --ignore-tag-errors \
         --ta "$ARTIST" --tt "$TITLE" --tl "$ALBUM"  --tg "${GENRE:-12}" \
@@ -93,8 +87,16 @@ def convert_flac_to_mp3(path, dest):
         return
     tags = get_flac_tags_mutagen(path)
     # print tags
-    lamecmd = ['lame', '-b', '320', '--replaygain-accurate', '--add-id3v2',
-               '--pad-id3v2-size', '256', '--ignore-tag-errors']
+    lamecmd = [
+        'lame',
+        '-b',
+        '320',
+        '--replaygain-accurate',
+        '--add-id3v2',
+        '--pad-id3v2-size',
+        '256',
+        '--ignore-tag-errors',
+    ]
     lametags = {
         'artist': 'ta',
         'title': 'tt',
@@ -115,12 +117,9 @@ def convert_flac_to_mp3(path, dest):
     # print(" ".join(flaccmd) + " | " +" ".join(lamecmd))
     # click.echo(path) #, dest)
     lame = subprocess.Popen(  # noqa: S603
-        lamecmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        lamecmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
-    flac = subprocess.Popen(flaccmd, stdout=lame.stdin)   # noqa: S603
+    flac = subprocess.Popen(flaccmd, stdout=lame.stdin)  # noqa: S603
     out, err = lame.communicate()
     if flac.wait() != 0:
         click.secho('ERROR in flac process', fg='red')
@@ -130,8 +129,7 @@ def convert_flac_to_mp3(path, dest):
 
 
 def rreplace(s, old, new, occurrence):
-    """
-    Rreplace.
+    """Rreplace.
 
     :param s: string
     :param old: string
@@ -142,8 +140,7 @@ def rreplace(s, old, new, occurrence):
 
 
 def resample_mp3(inpath, outpath, bitrate='128'):
-    """
-    Resample input file with given bitrate to target basedir.
+    """Resample input file with given bitrate to target basedir.
 
     lame --mp3input -b 128 input.mp3 output.mp3
     """
@@ -168,8 +165,7 @@ def resample_mp3(inpath, outpath, bitrate='128'):
 
 
 def convert(path, destdir, verbose=False, dry_run=False):
-    """
-    Convert the given file and put converted file to destdir.
+    """Convert the given file and put converted file to destdir.
 
     :param path:
     :param destdir:
@@ -180,7 +176,7 @@ def convert(path, destdir, verbose=False, dry_run=False):
         '.wav': convert_wave_to_mp3,
         '.aiff': convert_wave_to_mp3,
         '.flac': convert_flac_to_mp3,
-        '.mp3': resample_mp3
+        '.mp3': resample_mp3,
     }
     ext = None
     for ext_ in strategies:
@@ -203,8 +199,7 @@ def convert(path, destdir, verbose=False, dry_run=False):
 
 
 def newdir(source_parent, target_parent, path):
-    """
-    Compute destination path.
+    """Compute destination path.
 
     :param source_parent:
     :param target_parent:
@@ -219,8 +214,7 @@ def newdir(source_parent, target_parent, path):
 
 
 def filenames(path):
-    """
-    Generate filenames recursively from path.
+    """Generate filenames recursively from path.
 
     :param path: path
     """
@@ -240,8 +234,7 @@ def filenames(path):
 @click.option('-d', '--dry-run', is_flag=True, default=False)
 @click.option('-t', '--target', type=click.Path(exists=False, file_okay=False))
 def main(paths, target, verbose, dry_run):
-    """
-    Run command line interface.
+    """Run command line interface.
 
     :param paths:
     :param target:

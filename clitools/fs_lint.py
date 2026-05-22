@@ -1,6 +1,5 @@
 """Detect issues with files (permissions, ownership, naming)."""
 
-
 import difflib
 import logging
 import os
@@ -29,7 +28,7 @@ logger.setLevel(logging.INFO)
 linterdex = ClassRegistry('name')
 
 
-class TestBase():
+class TestBase:
     """Base class for file tests."""
 
     def __init__(self):  # noqa: D107
@@ -76,12 +75,7 @@ class TestTypeNonRegular(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if not stat.S_ISDIR(pathstat.st_mode) \
-            and not stat.S_ISREG(pathstat.st_mode) \
-                and not stat.S_ISLNK(pathstat.st_mode):
-            return False
-        else:
-            return True
+        return stat.S_ISDIR(pathstat.st_mode) or stat.S_ISREG(pathstat.st_mode) or stat.S_ISLNK(pathstat.st_mode)
 
 
 @linterdex.register
@@ -93,10 +87,7 @@ class TestPermissionsWorldWritable(TestBase):
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         # exclude symbolic links from this test
-        if not stat.S_ISLNK(pathstat.st_mode) and bool(pathstat.st_mode & stat.S_IWOTH):
-            return False
-        else:
-            return True
+        return stat.S_ISLNK(pathstat.st_mode) or not bool(pathstat.st_mode & stat.S_IWOTH)
 
     def fix(self, path, pathstat):
         """Fix permissions."""
@@ -117,11 +108,10 @@ class TestPermissionsWorldReadable(TestBase):
         """Run the test on path and stat object."""
         # we include "other executable" in this test
         # exclude symbolic links from this test
-        if not stat.S_ISLNK(pathstat.st_mode) and (bool(pathstat.st_mode & stat.S_IROTH) or
-                                                   bool(pathstat.st_mode & stat.S_IXOTH)):
-            return False
-        else:
-            return True
+        return not (
+            not stat.S_ISLNK(pathstat.st_mode)
+            and (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH))
+        )
 
     def fix(self, path, pathstat):
         """Fix permissions."""
@@ -151,10 +141,7 @@ class TestTypeBrokenSymlink(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if stat.S_ISLNK(pathstat.st_mode) and not os.path.exists(path):
-            return False
-        else:
-            return True
+        return not (stat.S_ISLNK(pathstat.st_mode) and (not os.path.exists(path)))
 
 
 @linterdex.register
@@ -177,11 +164,11 @@ class TestPermissionsWorldReadableDir(TestBase):
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         # skip symlinks
-        if not stat.S_ISLNK(pathstat.st_mode) and path.is_dir() and \
-                (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH)):
-            return False
-        else:
-            return True
+        return not (
+            not stat.S_ISLNK(pathstat.st_mode)
+            and path.is_dir()
+            and (bool(pathstat.st_mode & stat.S_IROTH) or bool(pathstat.st_mode & stat.S_IXOTH))
+        )
 
     def fix(self, path, pathstat):
         """Remove 'other' readable and 'other' executable bit."""
@@ -230,32 +217,85 @@ class TestPermissionsWronglyExecutable(TestBase):
 
     def __init__(self):  # noqa: D107
         super().__init__()
-        self._extensions = {'.jpg', '.jpeg', '.doc', '.xml', '.js', '.css',
-                            '.png', '.gif', '.ppt', '.vsd', '.xls', '.json',
-                            '.html', '.tiff', '.ini', '.java', '.graffle',
-                            '.sql', '.jar', '.mov', '.pdf', '.properties', '.psd',
-                            '.rtf', '.dvi', '.log', '.wmf', '.txt', '.bmp',
-                            '.tif', '.cdr', '.eps', '.zip', '.avi', '.mp4',
-                            '.odt', '.csv', '.ttf', '.xhtml', '.tbz', '.mid',
-                            '.ps', '.swf', '.tex', '.vor', '.dot', '.htm', '.wav',
-                            '.mp3', '.aif', '.pkg', '.idx', '.dtd', '.psp', '.svg',
-                            '.woff'}
+        self._extensions = {
+            '.jpg',
+            '.jpeg',
+            '.doc',
+            '.xml',
+            '.js',
+            '.css',
+            '.png',
+            '.gif',
+            '.ppt',
+            '.vsd',
+            '.xls',
+            '.json',
+            '.html',
+            '.tiff',
+            '.ini',
+            '.java',
+            '.graffle',
+            '.sql',
+            '.jar',
+            '.mov',
+            '.pdf',
+            '.properties',
+            '.psd',
+            '.rtf',
+            '.dvi',
+            '.log',
+            '.wmf',
+            '.txt',
+            '.bmp',
+            '.tif',
+            '.cdr',
+            '.eps',
+            '.zip',
+            '.avi',
+            '.mp4',
+            '.odt',
+            '.csv',
+            '.ttf',
+            '.xhtml',
+            '.tbz',
+            '.mid',
+            '.ps',
+            '.swf',
+            '.tex',
+            '.vor',
+            '.dot',
+            '.htm',
+            '.wav',
+            '.mp3',
+            '.aif',
+            '.pkg',
+            '.idx',
+            '.dtd',
+            '.psp',
+            '.svg',
+            '.woff',
+        }
         self.suffixes = {}  # keep an index count of all non-matched, executable extensions
         # useful for optimizing / debugging
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
         # exclude directories and symbolic links from this test
-        if not stat.S_ISDIR(pathstat.st_mode) and not stat.S_ISLNK(pathstat.st_mode):
-            if bool(pathstat.st_mode & stat.S_IXUSR) or \
-                bool(pathstat.st_mode & stat.S_IXGRP) or \
-                    bool(pathstat.st_mode & stat.S_IXOTH):
-                if path.suffix.lower() in self._extensions:
-                    return False
-                else:
-                    if path.suffix.lower() not in self.suffixes:
-                        self.suffixes[path.suffix.lower()] = 0
-                    self.suffixes[path.suffix.lower()] += 1
+        if (
+            not stat.S_ISDIR(pathstat.st_mode)
+            and not stat.S_ISLNK(pathstat.st_mode)
+            and (
+                bool(pathstat.st_mode & stat.S_IXUSR)
+                or bool(pathstat.st_mode & stat.S_IXGRP)
+                or bool(pathstat.st_mode & stat.S_IXOTH)
+            )
+        ):
+            if path.suffix.lower() in self._extensions:
+                return False
+            else:
+                if path.suffix.lower() not in self.suffixes:
+                    self.suffixes[path.suffix.lower()] = 0
+                self.suffixes[path.suffix.lower()] += 1
         return True
 
     def fix(self, path, pathstat):
@@ -281,12 +321,9 @@ class TestNameUpperCaseExtension(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if (not stat.S_ISDIR(pathstat.st_mode) and
-                (path.suffix not in self._ok_extensions and
-                    path.suffix.lower() != path.suffix)):
-            return False
-        else:
-            return True
+        return (
+            stat.S_ISDIR(pathstat.st_mode) or path.suffix in self._ok_extensions or path.suffix.lower() == path.suffix
+        )
 
     def fix(self, path, pathstat):
         """Fix upper case extension."""
@@ -307,14 +344,14 @@ class TestPermissionsOrphanExecutableBit(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
-        if bool(pathstat.st_mode & stat.S_IXUSR) and not bool(pathstat.st_mode & stat.S_IRUSR):
-            return False
-        elif bool(pathstat.st_mode & stat.S_IXGRP) and not bool(pathstat.st_mode & stat.S_IRGRP):
-            return False
-        elif bool(pathstat.st_mode & stat.S_IXOTH) and not bool(pathstat.st_mode & stat.S_IROTH):
-            return False
-        else:
-            return True
+        return not (
+            (pathstat.st_mode & stat.S_IXUSR)
+            and not (pathstat.st_mode & stat.S_IRUSR)
+            or (pathstat.st_mode & stat.S_IXGRP)
+            and not (pathstat.st_mode & stat.S_IRGRP)
+            or (pathstat.st_mode & stat.S_IXOTH)
+            and not (pathstat.st_mode & stat.S_IROTH)
+        )
 
 
 @linterdex.register
@@ -495,12 +532,12 @@ class TestSizeZero(TestBase):
 
     def _test(self, path, pathstat):
         """Run the test on path and stat object."""
+
         def allow_name(name):
             if name in self._allow_list:
                 return True
-            if self._allow_regex.match(name):
-                return True
-            return False
+            return bool(self._allow_regex.match(name))
+
         if pathstat.st_size == 0:
             # block, character devices, sockets are allowed to be 0 bytes:
             if stat.S_ISSOCK(pathstat.st_mode) or stat.S_ISCHR(pathstat.st_mode) or stat.S_ISBLK(pathstat.st_mode):
@@ -539,41 +576,63 @@ class TestNameLength32(TestBase):
         else:
             pass
             # path.rename(new_path)
+
     # other ideas
     # https://grokbase.com/t/python/python-list/085jmdej9z/compress-a-string
     # https://www.gsp.com/cgi-bin/man.cgi?topic=humanzip
 
 
 def colorize_differences_inline(a, b):
-    """
-    Highlight differences between strings a and b by creating a new string with custom highlighting.
+    """Highlight differences between strings a and b by creating a new string with custom highlighting.
 
     Example:
         ("filewithspeçialcharsüäö.txt", "filewithspecialcharsuao.txt")
         returns:
         "filewithspe{ç>c}ialchars{üäö>uao}.txt"
+
     """
     matcher = difflib.SequenceMatcher(None, a, b)
 
     def process_tag(tag, i1, i2, j1, j2):
         if tag == 'replace':
-            return Style.DIM + '{' + Style.NORMAL + Fore.RED + matcher.a[i1:i2] + \
-                Fore.RESET + Style.DIM + '>' + Style.NORMAL + Fore.GREEN + \
-                matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+            return (
+                Style.DIM
+                + '{'
+                + Style.NORMAL
+                + Fore.RED
+                + matcher.a[i1:i2]
+                + Fore.RESET
+                + Style.DIM
+                + '>'
+                + Style.NORMAL
+                + Fore.GREEN
+                + matcher.b[j1:j2]
+                + Fore.RESET
+                + Style.DIM
+                + '}'
+                + Style.NORMAL
+            )
         elif tag == 'delete':
             return ''.join(
-                (
-                    Style.DIM, '{-', Style.NORMAL, Fore.RED, matcher.a[i1:i2],
-                    Fore.RESET, Style.DIM, '}', Style.NORMAL
-                )
+                (Style.DIM, '{-', Style.NORMAL, Fore.RED, matcher.a[i1:i2], Fore.RESET, Style.DIM, '}', Style.NORMAL)
             )
         elif tag == 'equal':
             return matcher.a[i1:i2]
         elif tag == 'insert':
-            return Style.DIM + '{+' + Style.NORMAL + Fore.GREEN + \
-                matcher.b[j1:j2] + Fore.RESET + Style.DIM + '}' + Style.NORMAL
+            return (
+                Style.DIM
+                + '{+'
+                + Style.NORMAL
+                + Fore.GREEN
+                + matcher.b[j1:j2]
+                + Fore.RESET
+                + Style.DIM
+                + '}'
+                + Style.NORMAL
+            )
         else:
             raise ValueError('Unknown tag %r' % tag)
+
     return ''.join(process_tag(*t) for t in matcher.get_opcodes())
 
 
@@ -582,9 +641,7 @@ def colorize_differences(a, b):
     matcher = difflib.SequenceMatcher(None, a, b)
 
     def process_tag_a(tag, i1, i2, j1, j2):
-        if tag == 'replace':
-            return Fore.RED + matcher.a[i1:i2] + Fore.RESET
-        elif tag == 'delete':
+        if tag == 'replace' or tag == 'delete':
             return Fore.RED + matcher.a[i1:i2] + Fore.RESET
         elif tag == 'equal':
             return matcher.a[i1:i2]
@@ -604,6 +661,7 @@ def colorize_differences(a, b):
             return Fore.GREEN + matcher.b[j1:j2] + Fore.RESET
         else:
             raise ValueError('Unknown tag %r' % tag)
+
     a = ''.join(process_tag_a(*t) for t in matcher.get_opcodes())
     b = ''.join(process_tag_b(*t) for t in matcher.get_opcodes())
     return a, b
@@ -627,6 +685,7 @@ class TestNameNonAscii(TestBase):
     def experimentalfix(self, path, pathstat):
         """Attempt to transliterate non-ascii name to an ascii name."""
         from unidecode import unidecode
+
         newname = unidecode(path.name)
         if newname != path.name:
             newname = newname.replace('/', '_')  # unicode forward slash allowed, but not ascii!
@@ -636,7 +695,7 @@ class TestNameNonAscii(TestBase):
             os.rename(path, new_path)
 
 
-class FSLinter():
+class FSLinter:
     """The main linter class."""
 
     def __init__(self):  # noqa: D107
@@ -683,7 +742,7 @@ class FSLinter():
                     nl=False,
                     fg='red',
                     bold=False,
-                    color=self._color
+                    color=self._color,
                 )
                 # https://click.palletsprojects.com/en/8.0.x/utils/#printing-filenames
                 click.echo(click.format_filename(str(path)))
@@ -702,8 +761,7 @@ class FSLinter():
 
 
 def readlines(fname):
-    """
-    Return tuple with lines from the given file.
+    """Return tuple with lines from the given file.
 
     Ignores problems reading the file and returns an empty tuple.
 
@@ -724,8 +782,7 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
                 if not skip_vcs_ignore and '.gitignore' in files:
                     logger.debug('.gitignore found')
                     local_ignore_spec = pathspec.PathSpec.from_lines(
-                        'gitignore',
-                        exclude + readlines(os.path.join(root, '.gitignore'))
+                        'gitignore', exclude + readlines(os.path.join(root, '.gitignore'))
                     )
                 else:
                     local_ignore_spec = ignore_spec
@@ -755,27 +812,33 @@ def walk_filesystem(paths, skip_vcs_ignore, exclude, ignore_spec):
 @click.option('--fix', is_flag=True, default=False)
 @click.option('--color', default='auto', type=click.Choice(['auto', 'never', 'always'], case_sensitive=False))
 @click.option(
-    '-e', '--exclude', 'exclude',
-    metavar='PATTERN',
-    multiple=True,
-    help='Exclude files/directories matching PATTERN.'
+    '-e', '--exclude', 'exclude', metavar='PATTERN', multiple=True, help='Exclude files/directories matching PATTERN.'
 )
 @click.option(
-    '-U', '--skip-vcs-ignores', 'skip_vcs_ignore',
-    is_flag=True,
-    default=False,
-    help='Ignore VCS ignore files.'
+    '-U', '--skip-vcs-ignores', 'skip_vcs_ignore', is_flag=True, default=False, help='Ignore VCS ignore files.'
 )
 @click.option('-q', '--quiet', is_flag=True, default=False)
 @click.option('-v', '--verbose', is_flag=True, default=False, help='Show more information.')
 def fs_lint(
-    paths, skip_test, limit, list_tests, exclude, verbose, debug, hidden,
-    skip_vcs_ignore, statistics, fix, experimental, color, quiet
+    paths,
+    skip_test,
+    limit,
+    list_tests,
+    exclude,
+    verbose,
+    debug,
+    hidden,
+    skip_vcs_ignore,
+    statistics,
+    fix,
+    experimental,
+    color,
+    quiet,
 ):
     """Find paths that fail tests."""
     # cli input validation
     for t in chain(skip_test, limit):
-        if t not in linterdex.keys():
+        if t not in linterdex:
             click.echo('Invalid test "%s" specified. Abort.' % t)
             sys.exit(1)
     # end cli input validation
@@ -785,10 +848,7 @@ def fs_lint(
     linter.set_quiet(quiet)
     linter.set_fix(fix)
     linter.set_experimental(experimental)
-    if color.lower() == 'never':  # color: {auto,always,never}
-        color = False
-    else:
-        color = True
+    color = color.lower() != 'never'  # color: {auto,always,never}
     linter.set_color(color)
 
     if list_tests:
@@ -808,10 +868,11 @@ def fs_lint(
     if not skip_vcs_ignore:
         # get global gitignore patterns
         try:
-            gitexcludes = subprocess.check_output(  # noqa: S607
-                'git config --path --get core.excludesfile 2>/dev/null',
+            gitexcludes = subprocess.check_output(
+                ['git', 'config', '--path', '--get', 'core.excludesfile'],  # noqa: S607
                 encoding='UTF-8',
-                shell=True).strip()  # noqa: S602
+                stderr=subprocess.DEVNULL,
+            ).strip()
         except subprocess.CalledProcessError:
             pass  # git may not be installed or no config may be present
         else:
@@ -820,7 +881,7 @@ def fs_lint(
         exclude = ('.*',) + exclude  # assume .* matches most often and takes precedence
     ignore_spec = pathspec.PathSpec.from_lines('gitignore', exclude)
 
-    for available_test in linterdex.keys():
+    for available_test in linterdex:
         if limit:
             if available_test in limit:
                 linter.register(filetests[available_test])

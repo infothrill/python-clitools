@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Command line script to create notes with vim and templates.
 
 The basic concept is to manage notes within a tree of directories like this:
@@ -60,6 +58,7 @@ import click
 def fzf(options):
     """Present an fzf style interface for given options."""
     from pyfzf.pyfzf import FzfPrompt
+
     _fzf = FzfPrompt()
     result = _fzf.prompt(options)
     # print(result)
@@ -73,7 +72,7 @@ def runvi(path):
     shellscript.write('# auto-generated shell script\n')
     shellscript.write('vim %s\n' % path)
     fd, temp_name = tempfile.mkstemp('sh', 'vim-wrapper')
-    shellscript.write('rm -f {0}\n'.format(temp_name))
+    shellscript.write(f'rm -f {temp_name}\n')
     with open(temp_name, 'w') as fpshell:
         fpshell.write(shellscript.getvalue())
     os.close(fd)
@@ -93,32 +92,30 @@ def note():
     """Run note program."""
     basepath = os.getcwd()
     if not os.path.isdir(basepath):
-        raise RuntimeError('{0} is not a directory'.format(basepath))
+        raise RuntimeError(f'{basepath} is not a directory')
 
     result = fzf(sorted(names()))
     if len(result) == 0:
         return 0  # exit on demand
     option = result[-1]
     if not os.path.isdir(option):
-        raise RuntimeError('{0} is not a directory'.format(option))
+        raise RuntimeError(f'{option} is not a directory')
 
     targetpath = os.path.join(basepath, option)
     if not os.path.isdir(targetpath):
-        raise RuntimeError('{0} is not a directory'.format(targetpath))
+        raise RuntimeError(f'{targetpath} is not a directory')
 
     suffix = None
     _suffix_question_path = os.path.join(targetpath, '__suffix__')
     if os.path.isfile(_suffix_question_path):
-        with open(_suffix_question_path, 'r') as f:
+        with open(_suffix_question_path) as f:
             suffix_question = f.read().strip()
             suffix = input(suffix_question).strip()
 
     now = datetime.datetime.now()
-    fname = None
-    if suffix is None:
-        fname = '%s.md' % now.strftime('%Y-%m-%d')
-    else:
-        fname = '%s-%s.md' % (now.strftime('%Y-%m-%d'), suffix)
+    fname = (
+        '%s.md' % now.strftime('%Y-%m-%d') if suffix is None else '{}-{}.md'.format(now.strftime('%Y-%m-%d'), suffix)
+    )
     targetfname = os.path.join(targetpath, fname)
     if not os.path.exists(targetfname):
         _tpl_path = os.path.join(targetpath, '__template__.md')
@@ -134,8 +131,7 @@ def note():
 
 @click.command()
 def main():
-    """
-    Run command line interface.
+    """Run command line interface.
 
     :param nt: Note type
     """

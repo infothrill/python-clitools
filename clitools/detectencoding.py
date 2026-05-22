@@ -1,14 +1,12 @@
 """Attempt to detect encoding of file specified."""
 
-
 import sys
 
 import chardet
 
 
 def main():
-    """
-    Run main program.
+    """Run main program.
 
     :param args: command line args
     """

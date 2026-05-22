@@ -63,13 +63,22 @@ find = {namespaces = false}
 [tool.setuptools.package-data]
 "clitools.tests.resources" = ["clitools/tests/resources/*.ini"]
 
-[tool.flake8]
-max_line_length = "120"
-ignore = "W504"
-exclude = ".git,__pycache__,.tox,dist,build,.eggs,.direnv,.venv"
-per-file-ignores = """
-clitools/tests/*.py:S101,E501"""
+[tool.ruff]
+line-length = 120
+exclude = [".git", "__pycache__", ".tox", "dist", "build", ".eggs", ".direnv", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "D", "S", "A", "B", "C4", "I", "N", "Q", "T20", "SIM"]
+ignore = ["D203", "D213"]
+
+[tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.lint.per-file-ignores]
+"clitools/tests/*.py" = ["S101", "E501"]
+
+[tool.ruff.format]
+quote-style = "single"
 
 [tool.coverage.run]
 omit = ["clitools/tests/*"]

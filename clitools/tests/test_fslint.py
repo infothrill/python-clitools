@@ -25,9 +25,8 @@ def testfilesystem(tmp_path, request):
     """Generate a test filesystem."""
     tarball = os.path.join(request.fspath.dirname, 'resources', 'test-fs.tgz')
     os.chdir(tmp_path)
-    tar = tarfile.open(tarball)
-    tar.extractall(filter='fully_trusted')  # noqa: S202
-    tar.close()
+    with tarfile.open(tarball) as tar:
+        tar.extractall(filter='fully_trusted')  # noqa: S202
     yield tmp_path / 'test-fs'
     shutil.rmtree(tmp_path / 'test-fs')
 
@@ -36,15 +35,9 @@ def test_fs(testfilesystem):
     """Test cli run on example fs."""
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=str(testfilesystem)):
-        result = runner.invoke(fs_lint.fs_lint, [
-            '--color',
-            'never',
-            '--verbose',
-            '--fix',
-            '--experimental',
-            '--statistics',
-            str(testfilesystem)
-        ]
+        result = runner.invoke(
+            fs_lint.fs_lint,
+            ['--color', 'never', '--verbose', '--fix', '--experimental', '--statistics', str(testfilesystem)],
         )
     assert 'FAIL' in result.output
     # print(result.output)
@@ -71,7 +64,7 @@ def test_testpermissionsworldwritable(tmp_path):
     # setup test case
     test_path = tmp_path / 'testfile'
     test_path.touch()
-    os.chmod(test_path, stat.S_IWOTH)
+    os.chmod(test_path, stat.S_IWOTH)  # noqa: S103
 
     # run test case
     test = fs_lint.TestPermissionsWorldWritable()
@@ -132,7 +125,7 @@ def test_testpermsworldreadabledir(tmp_path):
         ('noex', 0o644, True),
         ('noex', 0o464, True),
         ('noex', 0o446, True),
-    ]
+    ],
 )
 def test_testpermsorphanexecutablebit(tmp_path, name, perms, shouldpass):
     """Test for TestPermissionsOrphanExecutableBit."""
@@ -162,7 +155,7 @@ def test_testpermsorphanexecutablebit(tmp_path, name, perms, shouldpass):
         ('  testfile', 'testfile', False),
         ('   testfile', 'testfile', False),
         ('   test file', 'test file', False),
-    ]
+    ],
 )
 def test_testnamespaceatstart(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceAtStart."""
@@ -197,7 +190,7 @@ def test_testnamespaceatstart(tmp_path, bad, fixed, shouldpass):
         ('testfile  ', 'testfile', False),
         ('testfile   ', 'testfile', False),
         ('test file   ', 'test file', False),
-    ]
+    ],
 )
 def test_testnamespaceatend(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceAtEnd."""
@@ -235,7 +228,7 @@ def test_testnamespaceatend(tmp_path, bad, fixed, shouldpass):
         ('test  file   ', 'test file ', False),
         ('  test  file   ', ' test file ', False),
         ('test      file', 'test file', False),
-    ]
+    ],
 )
 def test_testnamespacedouble(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameSpaceDouble."""
@@ -267,7 +260,7 @@ def test_testnamespacedouble(tmp_path, bad, fixed, shouldpass):
         ('test file', 'test file', True),
         ('test\tfile', 'testfile', False),
         ('testfile\x08', 'testfile', False),
-    ]
+    ],
 )
 def test_testnamecontrolchars(tmp_path, bad, fixed, shouldpass):
     """Test for TestNameControlChars."""

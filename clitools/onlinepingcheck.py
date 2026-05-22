@@ -1,48 +1,36 @@
-# -*- coding: utf-8 -*-
-
 """Test internet connectivity."""
 
 # supports python27+ with IPy
 # starting with python3.4 no additional dependencies
-
-from __future__ import absolute_import, print_function
-
+import ipaddress
 import platform
 import subprocess  # noqa: S404
 import sys
 from itertools import chain
 from random import randint
 
-if sys.version_info < (3, 4):
-    import IPy
 
-    def new_ip(address):
-        """Construct new IP address from string."""
-        return IPy.IP(address)
+def new_ip(address):
+    """Construct new IP address from string."""
+    return ipaddress.IPv4Address(address)
 
-    def is_global(ip_address):
-        """Test if IP is in a public range."""
-        return ip_address.iptype() == 'PUBLIC'
 
-else:
-    # pylint: disable=import-error
-    import ipaddress
-
-    def new_ip(address):
-        """Construct new IP address from string."""
-        return ipaddress.IPv4Address(address)
-
-    def is_global(ip_address):
-        """Test if IP is in a public range."""
-        return ip_address.is_global
+def is_global(ip_address):
+    """Test if IP is in a public range."""
+    return ip_address.is_global
 
 
 def random_ip():
     """Make a random IP string and return it."""
-    return new_ip('%i.%i.%i.%i' % (randint(1, 254),  # noqa: S311
-                                   randint(1, 254),  # noqa: S311
-                                   randint(1, 254),  # noqa: S311
-                                   randint(1, 254)))  # noqa: S311
+    return new_ip(
+        '%i.%i.%i.%i'
+        % (
+            randint(1, 254),  # noqa: S311
+            randint(1, 254),  # noqa: S311
+            randint(1, 254),  # noqa: S311
+            randint(1, 254),  # noqa: S311
+        )
+    )  # noqa: S311
 
 
 def random_public_ip():
@@ -54,8 +42,7 @@ def random_public_ip():
 
 
 def rand_ips(max_num=None):
-    """
-    Generate random IP addresses.
+    """Generate random IP addresses.
 
     :param max_num: generate this many IPs and not more
     """
@@ -67,8 +54,7 @@ def rand_ips(max_num=None):
 
 
 def can_ping_host(host, num_tries=1):
-    """
-    Test if the given host can be pinged at least once out of num_tries.
+    """Test if the given host can be pinged at least once out of num_tries.
 
     :param host: the host to ping
     :param num_tries: number of retries
@@ -89,8 +75,7 @@ def can_ping_host(host, num_tries=1):
 
 
 def online_check():
-    """
-    Test if we can reach anything via ping.
+    """Test if we can reach anything via ping.
 
     First iterates over some known hosts, then some randomly
     generated IPs and ends with DNS root servers.
@@ -114,7 +99,7 @@ def online_check():
         '192.58.128.30',
         '193.0.14.129',
         '198.32.64.12',
-        '202.12.27.33'
+        '202.12.27.33',
     ]
 
     iplists = []
